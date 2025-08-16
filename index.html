@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Editor de Singularidad para ADS</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  :root{ --bg1:#0a0f1a; --bg2:#0b1320; --card:#0e1626; --stroke:#1c2740; --fg:#e9f0ff; --muted:#a9b8d6; --primary:#3b82f6; }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; color:var(--fg);
+    background:radial-gradient(1200px 800px at 15% 10%, rgba(59,130,246,.08), transparent 60%), linear-gradient(180deg,var(--bg1),var(--bg2));
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:34px;
+    -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility;
+  }
+  .app{width:100%; max-width:1100px; background:var(--card); border:1px solid var(--stroke);
+       border-radius:20px; padding:26px; box-shadow:0 10px 40px rgba(0,0,0,.35)}
+  .header{display:flex; flex-direction:column; align-items:center; gap:6px; margin-bottom:10px}
+  h1{margin:0; font-size:28px; font-weight:800; letter-spacing:.1px; color:#e9f0ff; text-align:center}
+  .sub{color:var(--muted); font-size:14px; text-align:center}
+  .grid{display:grid; grid-template-columns:1.1fr .9fr; gap:24px; margin-top:12px}
+  @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+
+  .drop,.drop-mini{border:2px dashed var(--stroke); border-radius:14px; display:flex; align-items:center; justify-content:center; text-align:center; background:#0a1324; cursor:pointer; transition:.15s ease}
+  .drop{min-height:200px; padding:22px; margin-bottom:12px}
+  .drop-mini{min-height:84px; padding:12px}
+  .drop:hover,.drop-mini:hover{border-color:#2a3a64}
+  .drop.dragover,.drop-mini.dragover{border-color:var(--primary)}
+  .hidden{display:none!important}
+
+  .preview{
+    border:1px solid var(--stroke); border-radius:12px; background:#0b1426; padding:18px;
+    min-height:320px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.02), 0 6px 24px rgba(0,0,0,.35);
+  }
+  video, canvas{
+    max-width:100%; max-height:520px; border-radius:10px;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+    image-rendering: -moz-crisp-edges;
+  }
+
+  .field{background:#0b162e; border:1px solid #21345e; padding:14px 12px; border-radius:12px; color:var(--fg);
+         display:flex; align-items:center; gap:12px; justify-content:space-between; margin-bottom:14px}
+  .btn{appearance:none; border:1px solid #203055; background:#101a32; color:var(--fg); padding:10px 14px; border-radius:12px; cursor:pointer; font-weight:700; font-size:14px}
+  .btn:hover{border-color:#2a3b6b; background:#0e1830}
+  .btn.primaria{background:var(--primary); border-color:#2e6fe0; color:#0b1220}
+  .help{font-size:12.5px; color:#a9b8d6}
+  .filename{font-size:12.5px; color:#9fb7ff}
+  .progress{height:10px; background:#0a1428; border:1px solid #1c2f55; border-radius:999px; overflow:hidden; margin-top:18px}
+  .bar{height:100%; width:0%; background:linear-gradient(90deg, var(--primary), #67a5ff); transition:width .2s ease}
+  .toolbar{display:flex; gap:12px; flex-wrap:wrap; margin-top:14px}
+  input[type="text"], input[type="number"], select{
+    background:#0b162e; border:1px solid #21345e; color:#e9f0ff; padding:10px 12px; border-radius:10px; outline:none
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="header">
+    <h1>Editor de Singularidad para ADS</h1>
+    <div class="sub">Base intacta. <b>bordes suaves</b> (color distinto por variación), <b>figuras/franjas casi invisibles</b>, <b>marca de agua centrada</b> y <b>espejo</b>.</div>
+  </div>
+
+  <div class="grid">
+    <!-- IZQ -->
+    <div>
+      <label id="drop" class="drop" for="file">
+        <div>
+          <div style="font-weight:800; font-size:16px; margin-bottom:6px">Suelta tu imagen/video aquí o haz clic</div>
+          <div class="help">JPG/PNG/GIF/WEBP o MP4 (≤ 15MB)</div>
+        </div>
+        <input id="file" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4"/>
+      </label>
+
+      <div id="fileInfo" class="field hidden" style="justify-content:flex-start; gap:14px">
+        <span id="fileName" class="filename"></span>
+        <button id="changeBtn" class="btn" type="button">Cambiar archivo</button>
+      </div>
+
+      <div id="preview" class="preview"><div class="help">Tu vista previa aparecerá aquí</div></div>
+
+      <div class="toolbar">
+        <button id="mirrorBtn" class="btn" disabled type="button">Espejo ↔</button>
+        <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
+      </div>
+    </div>
+
+    <!-- DER -->
+    <div>
+      <div class="field">
+        <label for="count"><b>Variaciones</b></label>
+        <input id="count" type="number" min="1" max="10" value="6" style="width:72px;text-align:center"/>
+      </div>
+
+      <div id="countHelp" class="help" style="margin:-8px 0 10px 2px; display:none">
+        Para <b>video</b> se descarga <b>solo 1 variación</b> (mayor estabilidad/calidad).
+      </div>
+
+      <div class="field">
+        <label for="zipname"><b>Nombre del ZIP</b></label>
+        <input id="zipname" type="text" placeholder="mi_campaña_ads" value="variaciones_ads"/>
+      </div>
+
+      <!-- Duración y formato (video) -->
+      <div class="field" id="videoOpts" style="flex-direction:column; align-items:flex-start; display:none">
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap">
+          <b>Duración</b>
+          <label style="display:flex;align-items:center;gap:6px"><input type="radio" name="dur" id="durFull" checked/> Completa</label>
+          <label style="display:flex;align-items:center;gap:6px"><input type="radio" name="dur" id="durClip"/> Recortar a
+            <input id="sec" type="number" min="3" max="120" value="12" style="width:70px; margin-left:6px; text-align:center"/> s
+          </label>
+        </div>
+        <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:8px">
+          <b>Formato</b>
+          <select id="format">
+            <option value="auto">Auto (recomendado)</option>
+            <option value="video/webm;codecs=vp9">WebM VP9</option>
+            <option value="video/mp4;codecs=h264">MP4 H.264 (beta)</option>
+          </select>
+          <span class="help">Si MP4 no es compatible, se usará WebM automáticamente.</span>
+        </div>
+      </div>
+
+      <div class="field" style="flex-direction:column; align-items:flex-start">
+        <label style="display:flex;gap:10px;align-items:center"><input id="optBorder" type="checkbox" checked/> <b>Borde color sutil</b></label>
+        <label style="display:flex;gap:10px;align-items:center"><input id="optShapes" type="checkbox" checked/> <b>Figuras casi invisibles</b></label>
+        <label style="display:flex;gap:10px;align-items:center"><input id="optStripes" type="checkbox" checked/> <b>Franjas casi invisibles</b></label>
+        <label style="display:flex;gap:10px;align-items:center"><input id="optCenterWM" type="checkbox" checked/> <b>Marca de agua centrada</b></label>
+      </div>
+
+      <div class="field" style="flex-direction:column;align-items:flex-start">
+        <div class="help" style="margin-bottom:8px">Logo para marca de agua (no reemplaza la imagen/video)</div>
+        <label id="dropLogo" class="drop-mini">
+          <div><b>Arrastra tu logo</b> (PNG/JPG) o haz clic</div>
+          <input id="logoFile" class="hidden" type="file" accept="image/png,image/jpeg"/>
+        </label>
+        <div id="logoInfo" class="filename hidden"></div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button id="clearLogo" class="btn" type="button">Quitar logo</button>
+        </div>
+      </div>
+
+      <div class="help">Salida imágenes: PNG. Salida video: WebM o MP4 (según soporte). Todo 100% en tu navegador.</div>
+
+      <div class="progress"><div id="bar" class="bar"></div></div>
+      <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:14px">
+        <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const els = {
+    drop: $('drop'), fileInput: $('file'), fileInfo: $('fileInfo'), fileName: $('fileName'),
+    changeBtn: $('changeBtn'), preview: $('preview'),
+    mirrorBtn: $('mirrorBtn'), clearBtn: $('clearBtn'),
+    count: $('count'), countHelp: $('countHelp'), downloadBtn: $('downloadBtn'), bar: $('bar'),
+    optBorder: $('optBorder'), optShapes: $('optShapes'), optStripes: $('optStripes'), optCenterWM: $('optCenterWM'),
+    logoDrop: $('dropLogo'), logoFile: $('logoFile'), logoInfo: $('logoInfo'), clearLogo: $('clearLogo'),
+    zipname: $('zipname'), videoOpts: $('videoOpts'),
+    durFull: $('durFull'), durClip: $('durClip'), sec: $('sec'), format: $('format'),
+  };
+
+  const MAX_VIDEO = 15 * 1024 * 1024;
+  const state = { file:null, kind:null, objectURL:null, logo:null, baseHue:null, mirror:false };
+
+  const CFG = {
+    watermarkOpacity: [0.01, 0.02],
+    shapeAlpha:       [0.006, 0.012],
+    shapeSize:        [0.008, 0.018],
+    borderWidth:      [0.004, 0.007],
+    borderAlpha:      0.20,
+    stripeAlpha:      [0.006, 0.014],
+    stripeWidth:      [0.006, 0.012],
+    stripeGapMul:     [3.5, 5.5],
+    stripeAngle:      [-30, 30]
+  };
+
+  // Dropzones
+  setupDrop(els.drop);
+  els.fileInput.addEventListener('change', e => { const f=e.target.files?.[0]; if(f) handleMainFile(f); });
+  els.changeBtn.addEventListener('click', () => els.fileInput.click());
+  els.clearBtn.addEventListener('click', clearAll);
+  els.mirrorBtn.addEventListener('click', () => {
+    if(!state.file) return;
+    state.mirror = !state.mirror;
+    els.mirrorBtn.textContent = state.mirror ? 'Espejo ACTIVADO ↔' : 'Espejo ↔';
+    renderPreview();
+  });
+
+  setupMiniDrop(els.logoDrop, f => handleLogoFile(f));
+  els.logoFile.addEventListener('change', e => { const f=e.target.files?.[0]; if(f) handleLogoFile(f); });
+  els.clearLogo.addEventListener('click', () => { state.logo=null; els.logoInfo.classList.add('hidden'); els.logoFile.value=''; });
+
+  // logo por defecto si existe (opcional)
+  fetch('assets/logo.png').then(r => r.ok ? r.blob() : null).then(b => {
+    if (!b) return;
+    const u = URL.createObjectURL(b); const img = new Image();
+    img.onload = () => { state.logo = img; URL.revokeObjectURL(u); showLogoInfo('(assets/logo.png)'); };
+    img.src = u;
+  }).catch(()=>{});
+
+  function setupDrop(el){
+    ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.remove('dragover'); }));
+    el.addEventListener('drop', e => { const f=e.dataTransfer.files?.[0]; if(f) handleMainFile(f); });
+  }
+  function setupMiniDrop(el, onFile){
+    ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.add('dragover'); }));
+    ['dragleave','drop'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.remove('dragover'); }));
+    el.addEventListener('drop', e => { const f=e.dataTransfer.files?.[0]; if(f) onFile(f); });
+  }
+
+  function handleLogoFile(file){
+    if(!/^image\/(png|jpeg)$/.test(file.type)) return alert('Logo: PNG o JPG.');
+    const u=URL.createObjectURL(file); const img=new Image();
+    img.onload=()=>{ state.logo=img; URL.revokeObjectURL(u); showLogoInfo(file.name); };
+    img.src=u;
+  }
+  function showLogoInfo(name){ els.logoInfo.textContent='Logo cargado: '+name; els.logoInfo.classList.remove('hidden'); }
+
+  // Carga principal
+  async function handleMainFile(file){
+    const isImage = /^image\/(png|jpeg|gif|webp)$/.test(file.type);
+    const isVideo = file.type === 'video/mp4';
+    if(!(isImage||isVideo)) return alert('Formato no soportado.');
+    if(isVideo && file.size > MAX_VIDEO) return alert('Video > 15MB.');
+
+    state.file=file; state.kind=isImage?'image':'video';
+    if(state.objectURL) URL.revokeObjectURL(state.objectURL);
+    state.objectURL=URL.createObjectURL(file);
+    $('fileName').textContent=file.name+' • '+Math.round(file.size/1024)+' KB';
+    $('fileInfo').classList.remove('hidden'); $('drop').classList.add('hidden');
+    setEnabled(true); renderPreview();
+
+    // UI para video
+    if (state.kind==='video'){ els.count.value=1; els.count.disabled=true; els.countHelp.style.display='block'; els.videoOpts.style.display='flex'; }
+    else { els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; }
+
+    try{
+      state.baseHue = state.kind==='image'
+        ? await estimateHueFromImageURL(state.objectURL)
+        : await estimateHueFromVideoURL(state.objectURL);
+    }catch(e){ state.baseHue = null; }
+  }
+
+  function renderPreview(){
+    $('preview').innerHTML='';
+    if(state.kind==='image'){
+      const img=new Image();
+      img.onload=()=>{
+        const c=document.createElement('canvas'), ctx=c.getContext('2d',{desynchronized:true});
+        const {width,height}=fitWithin(img.width,img.height,960,540);
+        const dpr=window.devicePixelRatio||1;
+        c.width=Math.round(width*dpr); c.height=Math.round(height*dpr);
+        c.style.width=width+'px'; c.style.height=height+'px';
+        ctx.scale(dpr,dpr); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+
+        // --- espejo en PREVIEW (imagen)
+        ctx.save();
+        if (state.mirror){ ctx.translate(width,0); ctx.scale(-1,1); }
+        ctx.drawImage(img,0,0,width,height);
+        ctx.restore();
+
+        $('preview').appendChild(c);
+      };
+      img.src=state.objectURL;
+    }else{
+      const v=document.createElement('video'); v.src=state.objectURL; v.controls=true; v.muted=true; v.playsInline=true;
+      v.style.filter='contrast(1.01) saturate(1.01)';
+      // --- espejo en PREVIEW (video) vía CSS
+      v.style.transform = state.mirror ? 'scaleX(-1)' : 'none';
+      $('preview').appendChild(v);
+    }
+  }
+
+  function setEnabled(v){
+    els.downloadBtn.disabled = !v;
+    els.clearBtn.disabled    = !v;
+    els.mirrorBtn.disabled   = !v; // espejo habilitado para imagen y video
+  }
+
+  function fitWithin(w,h,maxW,maxH){ const r=Math.min(maxW/w, maxH/h, 1); return {width:Math.round(w*r), height:Math.round(h*r)}; }
+  function clearAll(){
+    if(state.objectURL) URL.revokeObjectURL(state.objectURL);
+    state.file=null; state.kind=null; state.objectURL=null; state.baseHue=null; state.mirror=false;
+    $('preview').innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>';
+    els.mirrorBtn.textContent='Espejo ↔';
+    $('file').value=''; setEnabled(false);
+    $('fileInfo').classList.add('hidden'); $('drop').classList.remove('hidden');
+    els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none';
+  }
+
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  const rnd=(a,b)=>Math.random()*(b-a)+a; const rndInt=(a,b)=>Math.floor(rnd(a,b+1));
+  const withAlpha=(hsl,a)=>hsl.replace('hsl','hsla').replace(')',`, ${a})`);
+  const wrap360=h=>((h%360)+360)%360;
+  const GOLDEN = 137.508;
+
+  function borderColorFor(idx, baseHue){
+    let h = wrap360((baseHue ?? 200) + 180 + idx*GOLDEN);
+    if (baseHue!=null){
+      const d = Math.min(Math.abs(h-baseHue), 360-Math.abs(h-baseHue));
+      if (d < 40) h = wrap360(h + 60);
+    }
+    const s = 62 + Math.random()*6, l = 60 + Math.random()*6;
+    return `hsl(${h}, ${s}%, ${l}%)`;
+  }
+
+  function rgb2hsl(r,g,b){
+    r/=255; g/=255; b/=255;
+    const max=Math.max(r,g,b), min=Math.min(r,g,b);
+    let h,s,l=(max+min)/2;
+    if(max===min){ h=0; s=0; }
+    else{
+      const d=max-min; s=l>0.5? d/(2-max-min) : d/(max+min);
+      switch(max){ case r:h=(g-b)/d+(g<b?6:0); break; case g:h=(b-r)/d+2; break; case b:h=(r-g)/d+4; }
+      h*=60;
+    }
+    return [h,s,l];
+  }
+  async function estimateHueFromImageURL(url){
+    const img = await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=url; });
+    const w=64, h=64; const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
+    ctx.drawImage(img,0,0,w,h); const {data}=ctx.getImageData(0,0,w,h);
+    let sx=0, sy=0;
+    for(let i=0;i<data.length;i+=16){
+      const [h,s]=rgb2hsl(data[i],data[i+1],data[i+2]); const rad=h*Math.PI/180; sx+=Math.cos(rad)*s; sy+=Math.sin(rad)*s;
+    }
+    return wrap360(Math.atan2(sy,sx)*180/Math.PI);
+  }
+  async function estimateHueFromVideoURL(url){
+    const v=document.createElement('video'); v.src=url; v.muted=true; v.playsInline=true;
+    await new Promise((res,rej)=>{ v.onloadeddata=res; v.onerror=rej; });
+    try{ v.currentTime=Math.min(0.2, v.duration||0); }catch{}
+    await new Promise((res)=>{ v.onseeked=res; v.onloadeddata && res(); });
+    const c=document.createElement('canvas'); c.width=64; c.height=64; const ctx=c.getContext('2d'); ctx.drawImage(v,0,0,64,64);
+    const {data}=ctx.getImageData(0,0,64,64);
+    let sx=0, sy=0;
+    for(let i=0;i<data.length;i+=16){
+      const [h,s]=rgb2hsl(data[i],data[i+1],data[i+2]); const rad=h*Math.PI/180; sx+=Math.cos(rad)*s; sy+=Math.sin(rad)*s;
+    }
+    return wrap360(Math.atan2(sy,sx)*180/Math.PI);
+  }
+
+  // --------- Descarga
+  $('downloadBtn').addEventListener('click', async () => {
+    if (!state.file) return;
+    let count = clamp(parseInt($('count').value||'1',10),1,10);
+    if (state.kind==='video') count = 1; // sólo 1 video
+    const base = sanitizeName($('zipname').value);
+    setProgress(0); $('downloadBtn').disabled=true;
+
+    try{
+      const zip = new JSZip();
+
+      if (state.kind === 'image'){
+        const img = await blobToImage(state.file);
+        const baseHue = state.baseHue ?? await estimateHueFromImageURL(state.objectURL);
+        for (let i=1;i<=count;i++){
+          const out = await renderImageVariation(img,{
+            border: $('optBorder').checked, shapes: $('optShapes').checked,
+            stripes: $('optStripes').checked, centerWM: $('optCenterWM').checked
+          }, { index:i, borderColor: borderColorFor(i, baseHue) });
+          zip.file(`${base}_img_${i}.png`, out, {binary:true});
+          setProgress(i*(100/count));
+        }
+      } else {
+        const info = await loadVideoMeta(state.objectURL);
+        const baseHue = state.baseHue ?? await estimateHueFromVideoURL(state.objectURL);
+        const recCfg = {
+          full: $('durFull').checked,
+          maxSeconds: parseInt($('sec').value||'12',10),
+          mime: $('format').value,
+          bps: 8_000_000,
+          borderColor: borderColorFor(1, baseHue)
+        };
+        const blob = await renderVideoVariation(state.objectURL,{
+          border:$('optBorder').checked, shapes:$('optShapes').checked,
+          stripes:$('optStripes').checked, centerWM:$('optCenterWM').checked,
+          mirror: state.mirror
+        }, { width:info.width, height:info.height }, recCfg);
+        const ext = (blob && blob.type && blob.type.includes('mp4')) ? 'mp4' : 'webm';
+        zip.file(`${base}_video_1.${ext}`, blob, {binary:true});
+        setProgress(100);
+      }
+
+      const zipBlob = await zip.generateAsync({type:'blob'});
+      downloadBlob(zipBlob, `${base}.zip`);
+    }catch(e){ console.error(e); alert('No se pudo generar el video completo en este navegador. Prueba con Chrome/Edge y mantén la pestaña activa durante la exportación.'); }
+    finally{ $('downloadBtn').disabled=false; setTimeout(()=>setProgress(0),800); }
+  });
+
+  // --------- Utils
+  function sanitizeName(str){
+    const s=(str||'').toString().trim().toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/[^a-z0-9._-]+/g,'_').replace(/^_+|_+$/g,'');
+    return s || 'variaciones_ads';
+  }
+  function setProgress(p){ $('bar').style.width = Math.max(0,Math.min(100,p)) + '%'; }
+  function downloadBlob(blob, fn){ const a=document.createElement('a'); const u=URL.createObjectURL(blob); a.href=u; a.download=fn; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1500); }
+  function blobToImage(b){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(b); const i=new Image(); i.onload=()=>{URL.revokeObjectURL(u);res(i)}; i.onerror=rej; i.src=u; }); }
+
+  // --------- Render IMAGEN (con espejo)
+  async function renderImageVariation(img, opts, vctx){
+    const maxSide=2000, s=Math.min(1, maxSide/Math.max(img.width,img.height));
+    const w=Math.round(img.width*s), h=Math.round(img.height*s);
+    const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+
+    // base con espejo si aplica
+    ctx.save();
+    if (state.mirror){ ctx.translate(w,0); ctx.scale(-1,1); }
+    ctx.drawImage(img,0,0,w,h);
+    ctx.restore();
+
+    // Overlays
+    if (opts.border)  paintSoftBorder(ctx,w,h,vctx.borderColor);
+    if (opts.shapes)  paintTinyShapes(ctx,w,h);
+    if (opts.stripes) paintInvisibleStripes(ctx,w,h);
+    if (opts.centerWM) paintCenteredLogo(ctx,w,h,state.logo);
+
+    return await new Promise(r=>c.toBlob(r,'image/png',0.95));
+  }
+
+  function paintSoftBorder(ctx,w,h,color){
+    const minSide=Math.min(w,h);
+    const size=Math.max(1, Math.round(minSide*(Math.random()*(0.007-0.004)+0.004)));
+    ctx.save(); ctx.lineWidth=size; ctx.strokeStyle=withAlpha(color, CFG.borderAlpha);
+    ctx.strokeRect(size/2, size/2, w-size, h-size); ctx.restore();
+  }
+  function paintTinyShapes(ctx,w,h){
+    const minSide=Math.min(w,h), n=rndInt(2,4);
+    for (let i=0;i<n;i++){
+      ctx.save();
+      const s=minSide*(Math.random()*(0.018-0.008)+0.008);
+      const x=rnd(s, w-s), y=rnd(s, h-s);
+      ctx.translate(x,y); ctx.rotate((Math.random()*14-7)*Math.PI/180);
+      ctx.globalAlpha=Math.random()*(0.012-0.006)+0.006;
+      ctx.fillStyle=`hsl(${Math.floor(Math.random()*360)},60%,65%)`;
+      const t=Math.random();
+      if (t<0.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); }
+      else if (t<0.67){ roundedRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); }
+      else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); }
+      ctx.restore();
+    }
+  }
+  function roundedRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+  function paintInvisibleStripes(ctx,w,h){
+    const minSide=Math.min(w,h);
+    const angle = (Math.random()*(30-(-30))+(-30)) * Math.PI/180;
+    const stripeW = minSide * (Math.random()*(0.012-0.006)+0.006);
+    const gap    = stripeW * (Math.random()*(5.5-3.5)+3.5);
+    const len    = Math.sqrt(w*w + h*h) + stripeW*2;
+    const color  = withAlpha(`hsl(${Math.floor(Math.random()*360)},60%,65%)`, Math.random()*(0.014-0.006)+0.006);
+    ctx.save(); ctx.translate(w/2, h/2); ctx.rotate(angle); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle=color;
+    for (let x=-len; x<=len; x+=gap) ctx.fillRect(x, -len, stripeW, len*2);
+    ctx.restore();
+  }
+  function paintCenteredLogo(ctx,w,h,logo){
+    if (!logo) return;
+    const alpha=Math.random()*(0.02-0.01)+0.01;
+    ctx.save();
+    const maxSide=Math.min(w,h)*0.28;
+    const r=Math.min(maxSide/Math.max(logo.width,logo.height),1);
+    const lw=logo.width*r, lh=logo.height*r;
+    ctx.globalAlpha=alpha;
+    ctx.drawImage(logo, Math.round((w-lw)/2), Math.round((h-lh)/2), Math.round(lw), Math.round(lh));
+    ctx.restore();
+  }
+
+  // --------- Video helpers
+  function loadVideoMeta(url){ return new Promise((res,rej)=>{ const v=document.createElement('video'); v.preload='metadata'; v.src=url; v.onloadedmetadata=()=>res({width:v.videoWidth,height:v.videoHeight,duration:v.duration}); v.onerror=rej; }); }
+
+  async function renderVideoVariation(url,opts,meta,recCfg){
+    const v=document.createElement('video'); v.src=url; v.muted=true; v.playsInline=true; v.crossOrigin='anonymous';
+    await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=rej; });
+
+    const w=meta.width, h=meta.height, fps=30;
+    const canvas=document.createElement('canvas'); canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+
+    const canvasStream=canvas.captureStream(fps);
+    // intenta añadir audio del video original
+    try {
+      if (v.captureStream) {
+        const vStream = v.captureStream();
+        const aud = vStream.getAudioTracks();
+        if (aud && aud.length) canvasStream.addTrack(aud[0]);
+      }
+    } catch(_) {}
+
+    // elegir mime
+    let mime = recCfg.mime;
+    const fallback = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4;codecs=h264'];
+    if (mime==='auto') mime = fallback.find(m=>MediaRecorder.isTypeSupported(m)) || '';
+    else if (!MediaRecorder.isTypeSupported(mime)) mime = fallback.find(m=>MediaRecorder.isTypeSupported(m)) || '';
+    if(!mime) throw new Error('MediaRecorder no soportado en este navegador');
+
+    const chunks=[]; const rec=new MediaRecorder(canvasStream,{mimeType:mime,videoBitsPerSecond:recCfg.bps||8_000_000});
+    rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+
+    const target = recCfg.full ? (isFinite(v.duration) ? v.duration : 600) : Math.max(3, recCfg.maxSeconds||12);
+
+    const drawBase = () => {
+      // dibuja base con espejo si aplica
+      ctx.save();
+      if (opts.mirror){ ctx.translate(w,0); ctx.scale(-1,1); }
+      ctx.drawImage(v,0,0,w,h);
+      ctx.restore();
+    };
+
+    const drawOverlays = () => {
+      if(opts.border)  paintSoftBorder(ctx,w,h, recCfg.borderColor);
+      if(opts.shapes)  paintTinyShapes(ctx,w,h);
+      if(opts.stripes) paintInvisibleStripes(ctx,w,h);
+      if(opts.centerWM) paintCenteredLogo(ctx,w,h,state.logo);
+    };
+
+    return await new Promise(async(res,rej)=>{
+      let raf;
+      rec.onstop=()=>{ cancelAnimationFrame(raf); res(new Blob(chunks,{type:rec.mimeType})); };
+      rec.onerror=e=>rej(e);
+
+      v.currentTime=0;
+      await v.play(); rec.start(200);
+
+      (function loop(){
+        if(v.paused||v.ended) return;
+        ctx.clearRect(0,0,w,h);
+        drawBase();       // espejo aquí
+        drawOverlays();   // overlays no espejo
+        const t = recCfg.full ? v.currentTime : Math.min(v.currentTime, target);
+        setProgress(Math.min(100, (t/target)*100));
+        if (!recCfg.full && t >= target - 0.03){ v.pause(); rec.stop(); return; }
+        raf=requestAnimationFrame(loop);
+      })();
+
+      v.onended=()=>{ if (rec.state!=='inactive'){ drawBase(); drawOverlays(); setProgress(100); rec.stop(); } };
+    });
+  }
+
+})();
+</script>
+</body>
+</html>
