@@ -62,7 +62,7 @@
   <div class="header">
     <h1>Editor de Singularidad para ADS</h1>
     <div class="sub">Base intacta. <b>bordes sutiles</b> (color distinto o multicolor), <b>figuras/franjas casi invisibles</b>, <b>marca de agua centrada</b> y <b>espejo</b>.</div>
-    <div class="desc">Herramienta para generar hasta 10 variaciones de una imagen (o 1 de video) con micro-detalles sutiles que reducen la singularidad en campañas de anuncios. Todo se procesa en tu navegador y se descarga en un .zip.</div>
+    <div class="desc">Herramienta para generar hasta 10 variaciones de una imagen (o 1 de video) con micro-detalles sutiles que reducen la singularidad en campañas. Todo se procesa en tu navegador y se descarga en un .zip.</div>
   </div>
 
   <div class="grid">
@@ -128,11 +128,10 @@
         <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap; margin-top:8px">
           <b>Formato</b>
           <select id="format">
-            <option value="auto">Auto (recomendado)</option>
-            <option value="video/webm;codecs=vp9">WebM VP9</option>
             <option value="video/mp4;codecs=h264">MP4 H.264 (beta)</option>
+            <option value="video/webm;codecs=vp9">WebM VP9</option>
           </select>
-          <span class="help">Si MP4 no es compatible, se usará WebM automáticamente.</span>
+          <span id="formatNote" class="help"></span>
         </div>
       </div>
 
@@ -156,7 +155,7 @@
         </div>
       </div>
 
-      <div class="help">Salida imágenes: PNG. Salida video: WebM o MP4 (según soporte). Todo 100% en tu navegador.</div>
+      <div class="help">Salida imágenes: PNG. Salida video: MP4 o WebM (según soporte). Todo 100% en tu navegador.</div>
 
       <div class="progress"><div id="bar" class="bar"></div></div>
       <div style="display:flex;gap:12px;justify-content:flex-end;margin-top:14px">
@@ -178,7 +177,7 @@
     optBorder: $('optBorder'), optBorderMulti: $('optBorderMulti'), optShapes: $('optShapes'), optStripes: $('optStripes'), optCenterWM: $('optCenterWM'),
     logoDrop: $('dropLogo'), logoFile: $('logoFile'), logoInfo: $('logoInfo'), clearLogo: $('clearLogo'),
     zipname: $('zipname'), videoOpts: $('videoOpts'),
-    durFull: $('durFull'), durClip: $('durClip'), sec: $('sec'), format: $('format'),
+    durFull: $('durFull'), durClip: $('durClip'), sec: $('sec'), format: $('format'), formatNote: $('formatNote'),
     seed: $('seed'), seedRnd: $('seedRnd'), seedHelp: $('seedHelp')
   };
 
@@ -197,6 +196,32 @@
     stripeAngle:      [-30, 30]
   };
 
+  // --- Formato: estado de soporte y fallback
+  function isSupported(mime){ try{ return MediaRecorder.isTypeSupported(mime); }catch{ return false; } }
+  function updateFormatNote(){
+    const sel = els.format.value;
+    const ok  = isSupported(sel);
+    const mp4Ok = isSupported('video/mp4;codecs=h264');
+    const webmOk = isSupported('video/webm;codecs=vp9') || isSupported('video/webm;codecs=vp8') || isSupported('video/webm');
+    if (ok) {
+      els.formatNote.textContent = sel.includes('mp4') ? 'MP4 disponible en este navegador.' : 'WebM disponible en este navegador.';
+    } else {
+      const alt = sel.includes('mp4') ? (webmOk ? 'WebM' : 'no disponible') : (mp4Ok ? 'MP4' : 'no disponible');
+      els.formatNote.textContent = alt==='no disponible'
+        ? 'Este navegador no soporta el formato seleccionado ni su alternativa.'
+        : `Este navegador no soporta el formato seleccionado. Se usará ${alt}.`;
+    }
+  }
+  function getBestMime(selected){
+    if (isSupported(selected)) return { mime:selected, fallback:false, to:null };
+    const alt = selected.includes('mp4')
+      ? (isSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9' :
+         isSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8' :
+         isSupported('video/webm') ? 'video/webm' : '')
+      : (isSupported('video/mp4;codecs=h264') ? 'video/mp4;codecs=h264' : '');
+    return { mime: alt, fallback: !!alt, to: alt || null };
+  }
+
   // Dropzones
   setupDrop(els.drop);
   els.fileInput.addEventListener('change', e => { const f=e.target.files?.[0]; if(f) handleMainFile(f); });
@@ -209,9 +234,8 @@
     renderPreview();
   });
   els.cancelBtn.addEventListener('click', () => { state.abort = true; });
-
-  // Semilla aleatoria (botón)
   els.seedRnd.addEventListener('click', () => { els.seed.value = genReadableSeed(); });
+  els.format.addEventListener('change', updateFormatNote);
 
   setupMiniDrop(els.logoDrop, f => handleLogoFile(f));
   els.logoFile.addEventListener('change', e => { const f=e.target.files?.[0]; if(f) handleLogoFile(f); });
@@ -224,6 +248,9 @@
     img.onload = () => { state.logo = img; URL.revokeObjectURL(u); showLogoInfo('(assets/logo.png)'); };
     img.src = u;
   }).catch(()=>{});
+
+  // set nota inicial de formato
+  updateFormatNote();
 
   function setupDrop(el){
     ['dragenter','dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.add('dragover'); }));
@@ -392,7 +419,6 @@
   $('downloadBtn').addEventListener('click', async () => {
     if (!state.file) return;
 
-    // Semilla para esta ejecución
     const seedStr = (els.seed.value||'').trim();
     const R = makeRandomizers(seedStr);
 
@@ -422,10 +448,23 @@
       } else {
         const info = await loadVideoMeta(state.objectURL);
         const baseHue = state.baseHue ?? await estimateHueFromVideoURL(state.objectURL);
+
+        // elegir mime según selección, con fallback si no está soportado
+        const sel = els.format.value;
+        const best = getBestMime(sel);
+        if (!best.mime) throw new Error('Ningún formato de video es soportado por este navegador.');
+        if (best.fallback) {
+          els.formatNote.textContent = sel.includes('mp4')
+            ? 'MP4 no soportado. Se exportará WebM.'
+            : 'WebM no soportado. Se exportará MP4.';
+        } else {
+          updateFormatNote();
+        }
+
         const recCfg = {
           full: $('durFull').checked,
           maxSeconds: parseInt($('sec').value||'12',10),
-          mime: $('format').value,
+          mime: best.mime,
           bps: 8_000_000,
           borderColor: borderColorFor(1, baseHue, R)
         };
@@ -441,11 +480,11 @@
         }
       }
 
-      // MANIFIESTO para auditoría/repetibilidad
+      // MANIFIESTO
       if (!state.abort){
         zip.file('manifest.json', JSON.stringify({
           app: "Editor de Singularidad para ADS",
-          version: "v16",
+          version: "v17",
           kind: state.kind,
           seed: seedStr || null,
           mirror: state.mirror,
@@ -493,13 +532,11 @@
     const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d');
     ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
 
-    // base con espejo si aplica
     ctx.save();
     if (state.mirror){ ctx.translate(w,0); ctx.scale(-1,1); }
     ctx.drawImage(img,0,0,w,h);
     ctx.restore();
 
-    // Overlays
     if (opts.border){
       if (opts.borderMulti) paintSoftBorderMulti(ctx,w,h,state.baseHue,R);
       else paintSoftBorder(ctx,w,h,vctx.borderColor,R);
@@ -524,14 +561,10 @@
     const hues = [0,90,180,270].map(d => wrap360((baseHue ?? 200) + d + 30*R.rng()));
     const cols = hues.map(h => `hsla(${h}, ${60+8*R.rng()}%, ${62+8*R.rng()}%, 0.18)`);
     ctx.save(); ctx.lineWidth=size;
-    // top
-    ctx.strokeStyle=cols[0]; ctx.beginPath(); ctx.moveTo(size/2, size/2); ctx.lineTo(w-size/2, size/2); ctx.stroke();
-    // right
-    ctx.strokeStyle=cols[1]; ctx.beginPath(); ctx.moveTo(w-size/2, size/2); ctx.lineTo(w-size/2, h-size/2); ctx.stroke();
-    // bottom
-    ctx.strokeStyle=cols[2]; ctx.beginPath(); ctx.moveTo(w-size/2, h-size/2); ctx.lineTo(size/2, h-size/2); ctx.stroke();
-    // left
-    ctx.strokeStyle=cols[3]; ctx.beginPath(); ctx.moveTo(size/2, h-size/2); ctx.lineTo(size/2, size/2); ctx.stroke();
+    ctx.strokeStyle=cols[0]; ctx.beginPath(); ctx.moveTo(size/2, size/2); ctx.lineTo(w-size/2, size/2); ctx.stroke(); // top
+    ctx.strokeStyle=cols[1]; ctx.beginPath(); ctx.moveTo(w-size/2, size/2); ctx.lineTo(w-size/2, h-size/2); ctx.stroke(); // right
+    ctx.strokeStyle=cols[2]; ctx.beginPath(); ctx.moveTo(w-size/2, h-size/2); ctx.lineTo(size/2, h-size/2); ctx.stroke(); // bottom
+    ctx.strokeStyle=cols[3]; ctx.beginPath(); ctx.moveTo(size/2, h-size/2); ctx.lineTo(size/2, size/2); ctx.stroke(); // left
     ctx.restore();
   }
 
@@ -589,7 +622,6 @@
     const ctx=canvas.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
 
     const canvasStream=canvas.captureStream(fps);
-    // intenta añadir audio del video original
     try {
       if (v.captureStream) {
         const vStream = v.captureStream();
@@ -598,14 +630,7 @@
       }
     } catch(_) {}
 
-    // elegir mime
-    let mime = recCfg.mime;
-    const fallback = ['video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm','video/mp4;codecs=h264'];
-    if (mime==='auto') mime = fallback.find(m=>MediaRecorder.isTypeSupported(m)) || '';
-    else if (!MediaRecorder.isTypeSupported(mime)) mime = fallback.find(m=>MediaRecorder.isTypeSupported(m)) || '';
-    if(!mime) throw new Error('MediaRecorder no soportado en este navegador');
-
-    const chunks=[]; const rec=new MediaRecorder(canvasStream,{mimeType:mime,videoBitsPerSecond:recCfg.bps||8_000_000});
+    const chunks=[]; const rec=new MediaRecorder(canvasStream,{mimeType:recCfg.mime,videoBitsPerSecond:recCfg.bps||8_000_000});
     rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
 
     const target = recCfg.full ? (isFinite(v.duration) ? v.duration : 600) : Math.max(3, recCfg.maxSeconds||12);
