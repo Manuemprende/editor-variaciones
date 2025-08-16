@@ -7,7 +7,8 @@
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
 :root{--bg1:#0a0f1a;--bg2:#0b1320;--card:#0e1626;--stroke:#1c2740;--fg:#e9f0ff;--muted:#a9b8d6;--primary:#3b82f6}
-*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
 background:radial-gradient(1200px 800px at 15% 10%,rgba(59,130,246,.08),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2));
 min-height:100vh;display:flex;align-items:center;justify-content:center;padding:34px;-webkit-font-smoothing:antialiased}
 .app{width:100%;max-width:1120px;background:var(--card);border:1px solid var(--stroke);border-radius:20px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
@@ -311,12 +312,32 @@ async function handleMain(file){
   renderPreview(); updateFormatNote();
 }
 
-async function loadBitmap(fileOrUrl){
-  try{ return await createImageBitmap(state.file || fileOrUrl); }
-  catch{
-    return await new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=state.url; });
-  }
+// ---------- Preview helpers (robusto para imágenes) ----------
+async function loadBitmap(file){
+  // Intento 1: ImageBitmap
+  try{
+    if ('createImageBitmap' in window){
+      const bmp = await createImageBitmap(file);
+      bmp._w = bmp.width; bmp._h = bmp.height;
+      return bmp;
+    }
+  }catch(e){ /* fallback */ }
+  // Intento 2: FileReader + Image (usa naturalWidth/Height)
+  return await new Promise((resolve, reject)=>{
+    const fr = new FileReader();
+    fr.onload = ()=>{
+      const img = new Image();
+      img.crossOrigin='anonymous';
+      img.onload = ()=>{ img._w = img.naturalWidth; img._h = img.naturalHeight; resolve(img); };
+      img.onerror = reject;
+      img.src = fr.result;
+    };
+    fr.onerror = reject;
+    fr.readAsDataURL(file);
+  });
 }
+function getW(img){ return img._w || img.naturalWidth || img.width; }
+function getH(img){ return img._h || img.naturalHeight || img.height; }
 
 function renderPreview(){
   if(!state.file){ els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>'; return; }
@@ -329,7 +350,7 @@ function renderPreview(){
       try{
         const bmp=await loadBitmap(state.file);
         const showAB=els.abPreview.checked && els.abEnable.checked;
-        let ow=bmp.width, oh=bmp.height;
+        let ow=getW(bmp), oh=getH(bmp);
         let crop={sx:0,sy:0,sw:ow,sh:oh};
         if(showAB && !els.noCrop.checked){
           const ratio=pickAspect(ow,oh,R); crop=computeCrop(ow,oh,ratio,R);
@@ -349,7 +370,7 @@ function renderPreview(){
         els.preview.appendChild(c);
       }catch(err){
         console.error('Preview imagen',err);
-        els.preview.innerHTML='<div class="help">No se pudo mostrar la imagen (prueba con otro archivo o navegador).</div>';
+        els.preview.innerHTML='<div class="help">No se pudo mostrar la imagen. Prueba otro PNG/JPG o recárgala (algunos navegadores antiguos fallan con createImageBitmap).</div>';
       }
     })();
   }else{
@@ -413,6 +434,7 @@ function renderPreview(){
   }
 }
 
+// ---------- Exportar ----------
 els.cancelBtn.addEventListener('click',()=>{ state.abort=true; });
 els.downloadBtn.addEventListener('click',async()=>{
   if(!state.file) return;
@@ -425,7 +447,7 @@ els.downloadBtn.addEventListener('click',async()=>{
       const N=Math.max(1,Math.min(10,parseInt(els.count.value||'1',10)));
       for(let i=1;i<=N;i++){
         const R=makeRNG(seedBase+`|img|${i}`); const showAB=els.abEnable.checked;
-        let ow=bmp.width, oh=bmp.height; let crop={sx:0,sy:0,sw:ow,sh:oh};
+        let ow=getW(bmp), oh=getH(bmp); let crop={sx:0,sy:0,sw:ow,sh:oh};
         if(showAB && !els.noCrop.checked){ const ratio=pickAspect(ow,oh,R); crop=computeCrop(ow,oh,ratio,R); }
         const w=crop.sw, h=crop.sh;
         const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
@@ -437,7 +459,6 @@ els.downloadBtn.addEventListener('click',async()=>{
       }
     }else{
       const info=await videoMeta(state.url);
-
       const targets=getTargets(); // MP4+WebM según soporte
       const plan=parseSegments(els.segments?.value||'', info.duration);
 
@@ -486,7 +507,6 @@ els.downloadBtn.addEventListener('click',async()=>{
           if(v.paused) return;
           ctx.clearRect(0,0,outW,outH);
           ctx.save(); if(state.mirror){ctx.translate(outW,0);ctx.scale(-1,1);} ctx.filter=els.abEnable.checked?pickLook(els.abIntensity.value,R):'none';
-          // si noCrop → usar frame completo (sin recorte)
           if(els.noCrop.checked){ ctx.drawImage(v,0,0,info.width,info.height,0,0,outW,outH); }
           else { ctx.drawImage(v,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outW,outH); }
           ctx.restore(); ctx.filter='none';
@@ -513,7 +533,7 @@ els.downloadBtn.addEventListener('click',async()=>{
       if(!state.abort) setProgress(100);
     }
     if(!state.abort){
-      zip.file('manifest.json',JSON.stringify({app:'Editor de Singularidad para ADS',version:'v29',seed:seedBase,perfLite:!!els.perfLite?.checked,noCrop:!!els.noCrop?.checked,keepRes:!!els.keepRes?.checked},null,2));
+      zip.file('manifest.json',JSON.stringify({app:'Editor de Singularidad para ADS',version:'v30',seed:seedBase,perfLite:!!els.perfLite?.checked,noCrop:!!els.noCrop?.checked,keepRes:!!els.keepRes?.checked},null,2));
       const zipBlob=await zip.generateAsync({type:'blob'}); download(zipBlob,`${base}.zip`);
     }
   }catch(err){ console.error(err); alert('No se pudo exportar. Prueba con Chrome/Edge y deja la pestaña activa.'); }
@@ -610,21 +630,16 @@ function parseSubs(text){
   const t = text.replace(/^\uFEFF/, '').replace(/\r/g,'');
   const blocks = t.trim().split(/\n{2,}/);
   const cues = [];
-
   for(const block of blocks){
     const lines = block.split('\n').filter(Boolean);
     if(!lines.length) continue;
     let i = /^\d+$/.test(lines[0].trim()) ? 1 : 0;
     if(i >= lines.length) continue;
-
     const timeLine = lines[i];
     const rng = splitTimeRange(timeLine);
     if(!rng) continue;
-
     const textLines = lines.slice(i+1).join('\n').trim();
-    if(textLines){
-      cues.push({ start: toSec(rng.start), end: toSec(rng.end), text: textLines });
-    }
+    if(textLines){ cues.push({ start: toSec(rng.start), end: toSec(rng.end), text: textLines }); }
   }
   return cues.length ? cues : autoFromText(t, 2);
 }
@@ -646,8 +661,6 @@ function autoFromText(t, per=2){
   const lines=t.split('\n').map(x=>x.trim()).filter(Boolean);
   let cur=0; return lines.map(txt=>({start:cur, end:(cur+=per), text:txt}));
 }
-/* ====== FIN parser ====== */
-
 function drawSubs(ctx,w,h,t,cues,opt){
   const c=cues.find(q=>t>=q.start&&t<q.end); if(!c) return;
   const pad=Math.round(Math.min(w,h)*0.03), f=clamp(opt.size||24,12,48); ctx.save(); ctx.font=`700 ${f}px system-ui,-apple-system,Segoe UI,Roboto,Arial`; ctx.textBaseline='bottom';
