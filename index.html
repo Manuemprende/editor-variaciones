@@ -1,621 +1,903 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Editor de Singularidad para ADS</title>
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<style>
-:root{--bg1:#0a0f1a;--bg2:#0b1320;--card:#0e1626;--stroke:#1c2740;--fg:#e9f0ff;--muted:#a9b8d6;--primary:#3b82f6}
-*{box-sizing:border-box}
-body{
-  margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
-  background:radial-gradient(1200px 800px at 15% 10%,rgba(59,130,246,.08),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2));
-  min-height:100vh;display:flex;align-items:center;justify-content:center;padding:34px;-webkit-font-smoothing:antialiased
-}
-.app{width:100%;max-width:1120px;background:var(--card);border:1px solid var(--stroke);border-radius:20px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-.header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
-h1{margin:0;font-size:28px;font-weight:800;letter-spacing:.1px;color:#e9f0ff;text-align:center}
-.sub{color:var(--muted);font-size:14px;text-align:center}
-.desc{margin-top:8px;color:#b8c6e8;font-size:13.5px;text-align:center}
-.grid{display:grid;grid-template-columns:1.12fr .88fr;gap:24px;margin-top:12px}
-@media (max-width:980px){.grid{grid-template-columns:1fr}}
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Editor de Singularidad para ADS</title>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+  <style>
+    :root {
+      --bg1: #0a0f1a;
+      --bg2: #0b1320;
+      --card: #0e1626;
+      --stroke: #1c2740;
+      --fg: #e9f0ff;
+      --muted: #a9b8d6;
+      --primary: #3b82f6;
+    }
 
-.drop,.drop-mini{
-  border:2px dashed var(--stroke);border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;
-  background:#0a1324;cursor:pointer;transition:.15s ease;user-select:none
-}
-.drop{min-height:200px;padding:22px;margin-bottom:12px}
-.drop-mini{min-height:84px;padding:12px}
-.drop:hover,.drop-mini:hover{border-color:#2a3a64}
-.drop.dragover,.drop-mini.dragover{border-color:var(--primary)}
-.hidden{display:none!important}
-.visually-hidden{position:absolute!important;width:1px;height:1px;padding:0;border:0;clip:rect(0 0 0 0);clip-path:inset(50%);overflow:hidden;white-space:nowrap}
+    * {
+      box-sizing: border-box
+    }
 
-.preview{
-  position:relative;border:1px solid var(--stroke);border-radius:12px;background:#0b1426;padding:18px;min-height:320px;
-  display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(255,255,255,.02),0 6px 24px rgba(0,0,0,.35)
-}
-video,canvas{max-width:100%;max-height:520px;border-radius:10px;image-rendering:-webkit-optimize-contrast;image-rendering:crisp-edges}
-.overlay{position:absolute;inset:0;pointer-events:none}
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color: var(--fg);
+      background: radial-gradient(1200px 800px at 15% 10%, rgba(59, 130, 246, .08), transparent 60%), linear-gradient(180deg, var(--bg1), var(--bg2));
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 34px;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+    }
 
-.field{background:#0b162e;border:1px solid #21345e;padding:14px 12px;border-radius:12px;color:var(--fg);
-  display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
-.btn{appearance:none;border:1px solid #203055;background:#101a32;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px}
-.btn:hover{border-color:#2a3b6b;background:#0e1830}
-.btn.primaria{background:var(--primary);border-color:#2e6fe0;color:#0b1220}
-.help{font-size:12.5px;color:#a9b8d6}
-.filename{font-size:12.5px;color:#9fb7ff}
-.progress{height:10px;background:#0a1428;border:1px solid #1c2f55;border-radius:999px;overflow:hidden;margin-top:18px}
-.bar{height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#67a5ff);transition:width .2s ease}
-.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
-input[type="text"],input[type="number"],select,input[type="color"]{background:#0b162e;border:1px solid #21345e;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #21345e;padding:6px 10px;border-radius:999px;font-size:12.5px}
-.chip input{margin:0}
-.hr{height:1px;background:#182b52;margin:8px 0 2px}
-</style>
+    .app {
+      width: 100%;
+      max-width: 1120px;
+      background: var(--card);
+      border: 1px solid var(--stroke);
+      border-radius: 20px;
+      padding: 26px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, .35)
+    }
+
+    .header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 10px
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: .1px;
+      color: #e9f0ff;
+      text-align: center
+    }
+
+    .sub {
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center
+    }
+
+    .desc {
+      margin-top: 8px;
+      color: #b8c6e8;
+      font-size: 13.5px;
+      text-align: center
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1.12fr .88fr;
+      gap: 24px;
+      margin-top: 12px
+    }
+
+    @media (max-width:980px) {
+      .grid {
+        grid-template-columns: 1fr
+      }
+    }
+
+    .drop,
+    .drop-mini {
+      border: 2px dashed var(--stroke);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background: #0a1324;
+      cursor: pointer;
+      transition: .15s ease
+    }
+
+    .drop {
+      min-height: 200px;
+      padding: 22px;
+      margin-bottom: 12px
+    }
+
+    .drop-mini {
+      min-height: 84px;
+      padding: 12px
+    }
+
+    .drop:hover,
+    .drop-mini:hover {
+      border-color: #2a3a64
+    }
+
+    .drop.dragover,
+    .drop-mini.dragover {
+      border-color: var(--primary)
+    }
+
+    .hidden {
+      display: none !important
+    }
+
+    .preview {
+      position: relative;
+      border: 1px solid var(--stroke);
+      border-radius: 12px;
+      background: #0b1426;
+      padding: 18px;
+      min-height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .02), 0 6px 24px rgba(0, 0, 0, .35);
+    }
+
+    video,
+    canvas {
+      max-width: 100%;
+      max-height: 520px;
+      border-radius: 10px;
+      image-rendering: -webkit-optimize-contrast;
+      image-rendering: crisp-edges;
+      image-rendering: -moz-crisp-edges;
+    }
+
+    .overlay-guide {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+
+    .field {
+      background: #0b162e;
+      border: 1px solid #21345e;
+      padding: 14px 12px;
+      border-radius: 12px;
+      color: var(--fg);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: space-between;
+      margin-bottom: 14px
+    }
+
+    .btn {
+      appearance: none;
+      border: 1px solid #203055;
+      background: #101a32;
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 14px
+    }
+
+    .btn:hover {
+      border-color: #2a3b6b;
+      background: #0e1830
+    }
+
+    .btn.primaria {
+      background: var(--primary);
+      border-color: #2e6fe0;
+      color: #0b1220
+    }
+
+    .help {
+      font-size: 12.5px;
+      color: #a9b8d6
+    }
+
+    .filename {
+      font-size: 12.5px;
+      color: #9fb7ff
+    }
+
+    .progress {
+      height: 10px;
+      background: #0a1428;
+      border: 1px solid #1c2f55;
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 18px
+    }
+
+    .bar {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary), #67a5ff);
+      transition: width .2s ease
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 14px
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea,
+    input[type="color"] {
+      background: #0b162e;
+      border: 1px solid #21345e;
+      color: #e9f0ff;
+      padding: 10px 12px;
+      border-radius: 10px;
+      outline: none
+    }
+
+    textarea {
+      min-height: 70px;
+      width: 100%;
+      resize: vertical
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid #21345e;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12.5px
+    }
+
+    .chip input {
+      margin: 0
+    }
+
+    .hr {
+      height: 1px;
+      background: #182b52;
+      margin: 8px 0 2px
+    }
+  </style>
 </head>
+
 <body>
-<div class="app" id="app">
-  <div class="header">
-    <h1>Editor de Singularidad para ADS</h1>
-    <div class="sub">Variaciones <b>sutiles invisibles</b> + A/B sutil (sin textos). PNG y MP4/WebM en tu navegador.</div>
-    <div class="desc">Propósito: minimizar la repetición entre anuncios, no evadir la revisión de plataformas.</div>
-  </div>
-
-  <div class="grid">
-    <!-- IZQUIERDA -->
-    <div>
-      <div id="drop" class="drop" tabindex="0" role="button" aria-label="Subir archivo">
-        <div>
-          <div style="font-weight:800;font-size:16px;margin-bottom:6px">Haz clic o suelta aquí tu imagen/video</div>
-          <div class="help">Formatos: JPG/PNG/GIF/WEBP o MP4 (≤ 15MB)</div>
-        </div>
+  <div class="app">
+    <div class="header">
+      <h1>Editor de Singularidad para ADS</h1>
+      <div class="sub">Variaciones <b>sutiles</b> + <b>visibles</b> (A/B). Exporta PNG y MP4/WebM, todo en tu navegador.
       </div>
-      <input id="file" class="visually-hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4"/>
-
-      <div id="fileInfo" class="field hidden" style="justify-content:flex-start;gap:14px">
-        <span id="fileName" class="filename"></span>
-        <button id="changeBtn" class="btn" type="button">Cambiar archivo</button>
-      </div>
-
-      <div id="preview" class="preview"><div class="help">Tu vista previa aparecerá aquí</div></div>
-
-      <div class="toolbar">
-        <button id="mirrorBtn" class="btn" disabled type="button">Espejo ↔</button>
-        <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
+      <div class="desc">No busca evadir integridad; solo diferenciar creativos para reducir repetición entre anuncios.
       </div>
     </div>
 
-    <!-- DERECHA -->
-    <div>
-      <div class="field">
-        <label for="count"><b>Variaciones (imagen)</b></label>
-        <input id="count" type="number" min="1" max="10" value="6" style="width:72px;text-align:center"/>
-      </div>
-
-      <div id="countHelp" class="help" style="margin:-8px 0 10px 2px;display:none">
-        Para <b>video</b> se descarga <b>1 variación</b>. Puedes marcar <b>ambos formatos</b> (MP4+WebM).
-      </div>
-
-      <div class="field">
-        <label for="zipname"><b>Nombre del ZIP</b></label>
-        <input id="zipname" type="text" placeholder="mi_campaña_ads" value="variaciones_ads"/>
-      </div>
-
-      <div class="field">
-        <label for="seed"><b>Semilla</b></label>
-        <div class="row" style="flex:1">
-          <input id="seed" type="text" placeholder="vacío = aleatoria" style="flex:1"/>
-          <button id="seedRnd" class="btn" type="button" title="Generar semilla">🎲</button>
-        </div>
-        <span class="help">Fija una semilla para reproducibilidad (incluye A/B y ambos formatos).</span>
-      </div>
-
-      <!-- OPCIONES VIDEO -->
-      <div class="field" id="videoOpts" style="flex-direction:column;align-items:flex-start;display:none">
-        <div class="row">
-          <b>Duración</b>
-          <label class="row"><input type="radio" name="dur" id="durFull" checked/> Completa</label>
-          <label class="row"><input type="radio" name="dur" id="durClip"/> Recortar a
-            <input id="sec" type="number" min="3" max="120" value="12" style="width:70px;margin-left:6px;text-align:center"/> s
-          </label>
-          <label class="row"><input type="checkbox" id="randStart"/> inicio aleatorio</label>
-        </div>
-        <div class="row" style="margin-top:8px">
-          <b>Formato</b>
-          <select id="format">
-            <option value="video/mp4;codecs=h264">MP4 H.264 (beta)</option>
-            <option value="video/webm;codecs=vp9">WebM VP9</option>
-          </select>
-          <label class="row"><input id="bothFormats" type="checkbox" checked/> <b>Exportar ambos (MP4+WebM)</b></label>
-        </div>
-        <label class="row"><input id="differentPerFormat" type="checkbox" checked/> A/B sutil diferente por formato</label>
-        <span id="formatNote" class="help"></span>
-        <span id="bothNote" class="help"></span>
-      </div>
-
-      <!-- INVISIBLES -->
-      <div class="field" style="flex-direction:column;align-items:flex-start">
-        <b>Variaciones sutiles (invisibles)</b>
-        <label class="row"><input id="optBorder" type="checkbox" checked/> Borde color sutil</label>
-        <label class="row"><input id="optBorderMulti" type="checkbox"/> Borde multicolor sutil</label>
-        <label class="row"><input id="optShapes" type="checkbox" checked/> Figuras casi invisibles</label>
-        <label class="row"><input id="optStripes" type="checkbox" checked/> Franjas casi invisibles</label>
-        <label class="row"><input id="optCenterWM" type="checkbox" checked/> Marca de agua centrada (logo)</label>
-      </div>
-
-      <!-- A/B SUTIL (sin textos) -->
-      <div class="field" style="flex-direction:column;align-items:flex-start">
-        <div class="row" style="justify-content:space-between;width:100%">
-          <b>A/B sutil (sin textos)</b>
-          <div class="row">
-            <label class="row"><input id="abPreview" type="checkbox"/> Previsualizar</label>
-            <label class="row" style="margin-left:12px"><input id="abEnable" type="checkbox" checked/> Activar</label>
+    <div class="grid">
+      <!-- IZQ -->
+      <div>
+        <label id="drop" class="drop" for="file">
+          <div>
+            <div style="font-weight:800; font-size:16px; margin-bottom:6px">Suelta tu imagen/video aquí o haz clic</div>
+            <div class="help">JPG/PNG/GIF/WEBP o MP4 (≤ 15MB)</div>
           </div>
+          <input id="file" class="hidden" type="file" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4" />
+        </label>
+
+        <div id="fileInfo" class="field hidden" style="justify-content:flex-start; gap:14px">
+          <span id="fileName" class="filename"></span>
+          <button id="changeBtn" class="btn" type="button">Cambiar archivo</button>
         </div>
-        <div class="hr"></div>
-        <div class="row" style="width:100%">
-          <div style="flex:1">
-            <div class="help" style="margin-bottom:6px">Relaciones de aspecto</div>
-            <div class="chips">
-              <label class="chip"><input id="arOrig" type="checkbox" checked/> Original</label>
-              <label class="chip"><input id="ar11"   type="checkbox" checked/> 1:1</label>
-              <label class="chip"><input id="ar45"   type="checkbox" checked/> 4:5</label>
-              <label class="chip"><input id="ar916"  type="checkbox"/> 9:16</label>
-              <label class="chip"><input id="ar169"  type="checkbox"/> 16:9</label>
+
+        <div id="preview" class="preview">
+          <div class="help">Tu vista previa aparecerá aquí</div>
+        </div>
+
+        <div class="toolbar">
+          <button id="mirrorBtn" class="btn" disabled type="button">Espejo ↔</button>
+          <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
+        </div>
+      </div>
+
+      <!-- DER -->
+      <div>
+        <div class="field">
+          <label for="count"><b>Variaciones (imagen)</b></label>
+          <input id="count" type="number" min="1" max="10" value="6" style="width:72px;text-align:center" />
+        </div>
+
+        <div id="countHelp" class="help" style="margin:-8px 0 10px 2px; display:none">
+          Para <b>video</b> se descarga <b>solo 1 variación</b>. Puedes marcar <b>ambos formatos</b> para MP4+WebM.
+        </div>
+
+        <div class="field">
+          <label for="zipname"><b>Nombre del ZIP</b></label>
+          <input id="zipname" type="text" placeholder="mi_campaña_ads" value="variaciones_ads" />
+        </div>
+
+        <div class="field">
+          <label for="seed"><b>Semilla</b></label>
+          <div class="row" style="flex:1">
+            <input id="seed" type="text" placeholder="vacío = aleatoria" style="flex:1" />
+            <button id="seedRnd" class="btn" type="button" title="Generar semilla aleatoria">🎲</button>
+          </div>
+          <span class="help">Fija una semilla para reproducibilidad (incluye A/B).</span>
+        </div>
+
+        <!-- Video -->
+        <div class="field" id="videoOpts" style="flex-direction:column; align-items:flex-start; display:none">
+          <div class="row">
+            <b>Duración</b>
+            <label class="row"><input type="radio" name="dur" id="durFull" checked /> Completa</label>
+            <label class="row"><input type="radio" name="dur" id="durClip" /> Recortar a
+              <input id="sec" type="number" min="3" max="120" value="12"
+                style="width:70px; margin-left:6px; text-align:center" /> s
+            </label>
+            <label class="row"><input type="checkbox" id="randStart" /> inicio aleatorio</label>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <b>Formato</b>
+            <select id="format">
+              <option value="video/mp4;codecs=h264">MP4 H.264 (beta)</option>
+              <option value="video/webm;codecs=vp9">WebM VP9</option>
+            </select>
+            <label class="row"><input id="bothFormats" type="checkbox" /> <b>Exportar ambos (MP4+WebM)</b></label>
+          </div>
+          <span id="formatNote" class="help"></span>
+          <span id="bothNote" class="help"></span>
+        </div>
+
+        <!-- Variaciones sutiles invisibles -->
+        <div class="field" style="flex-direction:column; align-items:flex-start">
+          <b>Variaciones sutiles (invisibles)</b>
+          <label class="row"><input id="optBorder" type="checkbox" checked /> Borde color sutil</label>
+          <label class="row"><input id="optBorderMulti" type="checkbox" /> Borde multicolor sutil</label>
+          <label class="row"><input id="optShapes" type="checkbox" checked /> Figuras casi invisibles</label>
+          <label class="row"><input id="optStripes" type="checkbox" checked /> Franjas casi invisibles</label>
+          <label class="row"><input id="optCenterWM" type="checkbox" checked /> Marca de agua centrada (usa tu
+            logo)</label>
+        </div>
+
+        <!-- A/B visible -->
+        <div class="field" style="flex-direction:column; align-items:flex-start">
+          <div class="row" style="justify-content:space-between; width:100%">
+            <b>Variaciones visibles (A/B)</b>
+            <div class="row">
+              <label class="row"><input id="abPreview" type="checkbox" /> Previsualizar A/B</label>
+              <label class="row" style="margin-left:12px"><input id="abEnable" type="checkbox" /> Activar</label>
             </div>
           </div>
-          <div>
-            <label><b>Intensidad look</b></label>
-            <select id="abIntensity">
-              <option value="low">Suave</option>
-              <option value="mid" selected>Media</option>
-              <option value="high">Alta</option>
-            </select>
+          <div class="hr"></div>
+          <div class="row" style="width:100%">
+            <div style="flex:1">
+              <div class="help" style="margin-bottom:6px">Relaciones de aspecto a usar</div>
+              <div class="chips">
+                <label class="chip"><input id="arOrig" type="checkbox" checked /> Original</label>
+                <label class="chip"><input id="ar11" type="checkbox" checked /> 1:1</label>
+                <label class="chip"><input id="ar45" type="checkbox" checked /> 4:5</label>
+                <label class="chip"><input id="ar916" type="checkbox" /> 9:16</label>
+                <label class="chip"><input id="ar169" type="checkbox" /> 16:9</label>
+              </div>
+            </div>
+            <div>
+              <label><b>Intensidad look</b></label>
+              <select id="abIntensity">
+                <option value="low">Suave</option>
+                <option value="mid" selected>Media</option>
+                <option value="high">Alta</option>
+              </select>
+            </div>
+          </div>
+          <div class="row" style="width:100%">
+            <div style="flex:1">
+              <label><b>Plantilla</b></label>
+              <select id="abLayout">
+                <option value="auto" selected>Auto (aleatoria)</option>
+                <option value="none">Sin plantilla</option>
+                <option value="headline-top">Titular arriba</option>
+                <option value="bar-bottom">Barra inferior</option>
+                <option value="badge-right">Badge lateral</option>
+              </select>
+            </div>
+            <div style="min-width:220px">
+              <label><b>A/B extra</b></label>
+              <select id="abExtra">
+                <option value="none" selected>Ninguno</option>
+                <option value="logo-corner">Logo en esquina</option>
+                <option value="frame-rounded">Marco redondeado</option>
+                <option value="vignette-boost">Viñeta suave</option>
+              </select>
+            </div>
+          </div>
+          <label><b>Titulares (separa con |)</b></label>
+          <textarea id="heads"
+            placeholder="Ej: Envío gratis hoy|Nuevo color disponible|Calidad que se nota">Envío gratis hoy|Nuevo color disponible|Calidad que se nota</textarea>
+          <span class="help">Sin CTA. El titular es opcional (puedes dejarlo vacío).</span>
+        </div>
+
+        <!-- Inspección y Logo -->
+        <div class="field" style="flex-direction:column; align-items:flex-start">
+          <label class="row"><input id="optInspect" type="checkbox" /> Inspección (solo visual en preview)</label>
+          <span class="help">Guías visibles en vista previa; no se exportan. Usa Semilla para reproducir.</span>
+        </div>
+
+        <div class="field" style="flex-direction:column;align-items:flex-start">
+          <div class="help" style="margin-bottom:8px">Logo (marca de agua sutil en el centro y para “logo en esquina”)
+          </div>
+          <label id="dropLogo" class="drop-mini">
+            <div><b>Arrastra tu logo</b> (PNG/JPG) o haz clic</div>
+            <input id="logoFile" class="hidden" type="file" accept="image/png,image/jpeg" />
+          </label>
+          <div id="logoInfo" class="filename hidden"></div>
+          <div class="row" style="margin-top:6px">
+            <button id="clearLogo" class="btn" type="button">Quitar logo</button>
           </div>
         </div>
-        <div class="row" style="width:100%">
-          <div style="min-width:250px">
-            <label><b>Extra sutil</b></label>
-            <select id="abExtra">
-              <option value="none">Ninguno</option>
-              <option value="vignette-soft" selected>Viñeta muy suave</option>
-              <option value="corner-shadows">Sombras de esquinas</option>
-              <option value="rounded-soft">Esquinas redondeadas suaves</option>
-              <option value="grain-light">Grano muy fino</option>
-              <option value="tint-hue">Tinte leve</option>
-              <option value="dot-grid">Patrón de puntos finos</option>
-              <option value="logo-corner">Logo en esquina (si subes logo)</option>
-            </select>
-          </div>
-          <label class="row"><input id="abExtraRandom" type="checkbox"/> Aleatorio por variación</label>
+
+        <div class="help">Salida imágenes: PNG. Salida video: MP4 o WebM (según soporte). Todo 100% en tu navegador.
         </div>
-      </div>
 
-      <!-- LOGO -->
-      <div class="field" style="flex-direction:column;align-items:flex-start">
-        <div class="help" style="margin-bottom:8px">Logo (PNG/JPG) para marca de agua centrada y “logo en esquina”.</div>
-        <div id="dropLogo" class="drop-mini" tabindex="0" role="button"><b>Arrastra tu logo</b> o haz clic</div>
-        <input id="logoFile" class="visually-hidden" type="file" accept="image/png,image/jpeg"/>
-        <div id="logoInfo" class="filename hidden"></div>
-        <div class="row" style="margin-top:6px"><button id="clearLogo" class="btn" type="button">Quitar logo</button></div>
-      </div>
-
-      <div class="help">Salida imágenes: PNG. Vídeo: MP4 o WebM. Todo 100% en tu navegador.</div>
-
-      <div class="progress"><div id="bar" class="bar"></div></div>
-      <div class="row" style="justify-content:flex-end;margin-top:14px">
-        <button id="cancelBtn" class="btn" type="button" disabled>Cancelar</button>
-        <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
+        <div class="progress">
+          <div id="bar" class="bar"></div>
+        </div>
+        <div class="row" style="justify-content:flex-end; margin-top:14px">
+          <button id="cancelBtn" class="btn" type="button" disabled>Cancelar</button>
+          <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script>
-(()=>{
-// ---------- helpers DOM
-const $=id=>document.getElementById(id);
-const els={
-  drop:$('drop'), file:$('file'), fileInfo:$('fileInfo'), fileName:$('fileName'), changeBtn:$('changeBtn'),
-  preview:$('preview'), mirrorBtn:$('mirrorBtn'), clearBtn:$('clearBtn'),
-  count:$('count'), countHelp:$('countHelp'), zipname:$('zipname'),
-  seed:$('seed'), seedRnd:$('seedRnd'),
-  downloadBtn:$('downloadBtn'), cancelBtn:$('cancelBtn'), bar:$('bar'),
+  <script>
+    (() => {
+      const $ = id => document.getElementById(id);
+      const els = {
+        drop: $('drop'), file: $('file'), fileInfo: $('fileInfo'), fileName: $('fileName'),
+        changeBtn: $('changeBtn'), preview: $('preview'),
+        mirrorBtn: $('mirrorBtn'), clearBtn: $('clearBtn'),
+        count: $('count'), countHelp: $('countHelp'), downloadBtn: $('downloadBtn'), cancelBtn: $('cancelBtn'), bar: $('bar'),
+        optBorder: $('optBorder'), optBorderMulti: $('optBorderMulti'), optShapes: $('optShapes'), optStripes: $('optStripes'), optCenterWM: $('optCenterWM'),
+        optInspect: $('optInspect'),
+        logoDrop: $('dropLogo'), logoFile: $('logoFile'), logoInfo: $('logoInfo'), clearLogo: $('clearLogo'),
+        zipname: $('zipname'), videoOpts: $('videoOpts'),
+        durFull: $('durFull'), durClip: $('durClip'), sec: $('sec'), format: $('format'), formatNote: $('formatNote'),
+        bothFormats: $('bothFormats'), bothNote: $('bothNote'), randStart: $('randStart'),
+        seed: $('seed'), seedRnd: $('seedRnd'),
 
-  // invisibles
-  optBorder:$('optBorder'), optBorderMulti:$('optBorderMulti'), optShapes:$('optShapes'), optStripes:$('optStripes'), optCenterWM:$('optCenterWM'), optInspect:null,
+        // A/B visibles
+        abEnable: $('abEnable'), abPreview: $('abPreview'), abIntensity: $('abIntensity'), abLayout: $('abLayout'), abExtra: $('abExtra'),
+        heads: $('heads'),
+        arOrig: $('arOrig'), ar11: $('ar11'), ar45: $('ar45'), ar916: $('ar916'), ar169: $('ar169'),
+      };
 
-  // logo
-  dropLogo:$('dropLogo'), logoFile:$('logoFile'), logoInfo:$('logoInfo'), clearLogo:$('clearLogo'),
+      const MAX_VIDEO = 15 * 1024 * 1024;
+      const state = { file: null, kind: null, url: null, logo: null, baseHue: null, mirror: false, abort: false, previewSeed: null, overlay: null };
 
-  // video
-  videoOpts:$('videoOpts'), durFull:$('durFull'), durClip:$('durClip'), sec:$('sec'), randStart:$('randStart'),
-  format:$('format'), bothFormats:$('bothFormats'), differentPerFormat:$('differentPerFormat'),
-  formatNote:$('formatNote'), bothNote:$('bothNote'),
+      // --- setup dropzones
+      ;['dragenter', 'dragover'].forEach(ev => els.drop.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); els.drop.classList.add('dragover'); }));
+      ;['dragleave', 'drop'].forEach(ev => els.drop.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); els.drop.classList.remove('dragover'); }));
+      els.drop.addEventListener('drop', e => { const f = e.dataTransfer.files?.[0]; if (f) loadMain(f); });
+      els.file.addEventListener('change', e => { const f = e.target.files?.[0]; if (f) loadMain(f); });
+      $('changeBtn').addEventListener('click', () => els.file.click());
+      $('clearBtn').addEventListener('click', clearAll);
+      $('mirrorBtn').addEventListener('click', () => { if (!state.file) return; state.mirror = !state.mirror; $('mirrorBtn').textContent = state.mirror ? 'Espejo ACTIVADO ↔' : 'Espejo ↔'; renderPreview(); });
+      $('cancelBtn').addEventListener('click', () => { state.abort = true; });
 
-  // A/B
-  abEnable:$('abEnable'), abPreview:$('abPreview'), abIntensity:$('abIntensity'),
-  arOrig:$('arOrig'), ar11:$('ar11'), ar45:$('ar45'), ar916:$('ar916'), ar169:$('ar169'),
-  abExtra:$('abExtra'), abExtraRandom:$('abExtraRandom'),
-};
+      // listeners UI
+      ['optBorder', 'optBorderMulti', 'optShapes', 'optStripes', 'optCenterWM', 'optInspect', 'seed', 'abEnable', 'abPreview', 'abIntensity', 'abLayout', 'abExtra', 'heads', 'arOrig', 'ar11', 'ar45', 'ar916', 'ar169', 'format', 'bothFormats', 'durFull', 'durClip', 'sec', 'randStart'].forEach(id => {
+        $(id).addEventListener('change', renderPreview);
+      });
+      $('seedRnd').addEventListener('click', () => { els.seed.value = genSeed(); });
 
-// ---------- estado
-const MAX_VIDEO=15*1024*1024;
-const state={file:null,kind:null,url:null,logo:null,mirror:false,abort:false,baseHue:null,previewSeed:null,overlay:null};
+      // logo
+      setupMiniDrop(els.logoDrop, f => loadLogo(f));
+      els.logoFile.addEventListener('change', e => { const f = e.target.files?.[0]; if (f) loadLogo(f); });
+      els.clearLogo.addEventListener('click', () => { state.logo = null; els.logoInfo.classList.add('hidden'); els.logoFile.value = ''; renderPreview(); });
 
-// ---------- subir archivo (click y drag&drop fijos)
-els.drop.addEventListener('click',()=>{ els.file.value=''; els.file.click(); });
-els.drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); els.file.value=''; els.file.click(); }});
-['dragenter','dragover'].forEach(ev=>els.drop.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();els.drop.classList.add('dragover');}));
-['dragleave','drop'].forEach(ev=>els.drop.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();els.drop.classList.remove('dragover');}));
-els.drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files?.[0]; if(f) handleMain(f); });
-els.file.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) handleMain(f); });
-els.changeBtn.addEventListener('click',()=>{ els.file.value=''; els.file.click(); });
+      // logo por defecto (opcional)
+      fetch('assets/logo.png').then(r => r.ok ? r.blob() : null).then(b => {
+        if (!b) return;
+        const u = URL.createObjectURL(b); const img = new Image();
+        img.onload = () => { state.logo = img; URL.revokeObjectURL(u); showLogoInfo('(assets/logo.png)'); renderPreview(); };
+        img.src = u;
+      }).catch(() => { });
 
-function setEnabled(v){ els.downloadBtn.disabled=!v; els.clearBtn.disabled=!v; els.mirrorBtn.disabled=!v; }
-function clearAll(){
-  if(state.url) URL.revokeObjectURL(state.url);
-  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,baseHue:null,previewSeed:null});
-  els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>';
-  els.mirrorBtn.textContent='Espejo ↔';
-  els.fileInfo.classList.add('hidden'); els.drop.classList.remove('hidden');
-  els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none';
-  setEnabled(false);
-}
-
-// -------- logo
-['click','keydown'].forEach(ev=>els.dropLogo.addEventListener(ev,e=>{ if(ev==='keydown' && !(e.key==='Enter'||e.key===' ')) return; if(e.preventDefault) e.preventDefault(); els.logoFile.value=''; els.logoFile.click(); }));
-els.logoFile.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; if(!/^image\/(png|jpeg)$/.test(f.type)) return alert('Logo: PNG/JPG'); const u=URL.createObjectURL(f); const img=new Image(); img.onload=()=>{ state.logo=img; URL.revokeObjectURL(u); els.logoInfo.textContent='Logo: '+f.name; els.logoInfo.classList.remove('hidden'); renderPreview(); }; img.src=u; });
-els.clearLogo.addEventListener('click',()=>{ state.logo=null; els.logoInfo.classList.add('hidden'); els.logoFile.value=''; renderPreview(); });
-
-// -------- botones
-els.clearBtn.addEventListener('click',clearAll);
-els.mirrorBtn.addEventListener('click',()=>{ if(!state.file) return; state.mirror=!state.mirror; els.mirrorBtn.textContent=state.mirror?'Espejo ACTIVADO ↔':'Espejo ↔'; renderPreview(); });
-els.seedRnd.addEventListener('click',()=>{ els.seed.value=genSeed(); renderPreview(); });
-['abEnable','abPreview','abIntensity','arOrig','ar11','ar45','ar916','ar169','abExtra','abExtraRandom','optBorder','optBorderMulti','optShapes','optStripes','optCenterWM','format','bothFormats','differentPerFormat','durFull','durClip','sec','randStart'].forEach(id=>{
-  (document.getElementById(id)||{}).addEventListener?.('change',renderPreview);
-});
-
-// ---------- cargar principal
-async function handleMain(file){
-  const isImage=/^image\/(png|jpeg|gif|webp)$/.test(file.type);
-  const isVideo=file.type==='video/mp4';
-  if(!(isImage||isVideo)) return alert('Formato no soportado.');
-  if(isVideo && file.size>MAX_VIDEO) return alert('Video > 15MB.');
-
-  state.file=file; state.kind=isImage?'image':'video';
-  if(state.url) URL.revokeObjectURL(state.url);
-  state.url=URL.createObjectURL(file);
-  els.fileName.textContent=`${file.name} • ${Math.round(file.size/1024)} KB`;
-  els.fileInfo.classList.remove('hidden'); els.drop.classList.add('hidden');
-  setEnabled(true);
-  state.previewSeed=genSeed();
-
-  if(state.kind==='video'){ els.count.value=1; els.count.disabled=true; els.countHelp.style.display='block'; els.videoOpts.style.display='flex'; }
-  else { els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; }
-
-  // color base aproximado (para tintes sutiles y bordes)
-  try{ state.baseHue = state.kind==='image' ? await hueFromImage(state.url) : await hueFromVideo(state.url); }catch{ state.baseHue=null; }
-
-  renderPreview();
-  updateFormatNote();
-}
-
-// ---------- preview (imagen / video)
-function renderPreview(){
-  if(!state.file){ els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>'; return; }
-  els.preview.innerHTML='';
-
-  const seed = (els.seed.value||'').trim() || state.previewSeed;
-  const R = makeRNG(seed);
-
-  if(state.kind==='image'){
-    const img=new Image();
-    img.onload=()=>{
-      const showAB=els.abPreview.checked && els.abEnable.checked;
-      let ow=img.width, oh=img.height;
-      let ratio=ow/oh, crop={sx:0,sy:0,sw:ow,sh:oh};
-      if(showAB){
-        ratio = pickAspect(ow,oh,R);
-        crop  = computeCrop(ow,oh,ratio,R);
+      function setupMiniDrop(el, onFile) {
+        ['dragenter', 'dragover'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.add('dragover'); }));
+        ['dragleave', 'drop'].forEach(ev => el.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); el.classList.remove('dragover'); }));
+        el.addEventListener('drop', e => { const f = e.dataTransfer.files?.[0]; if (f) onFile(f); });
       }
-      const out  = fitOut(crop.sw,crop.sh,ratio);
-      const fit  = fit(out.w,out.h,960,540);
-      const dpr  = window.devicePixelRatio||1;
-      const c=document.createElement('canvas'); c.width=Math.round(fit.w*dpr); c.height=Math.round(fit.h*dpr);
-      c.style.width=fit.w+'px'; c.style.height=fit.h+'px';
-      const ctx=c.getContext('2d'); ctx.scale(dpr,dpr); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+      function loadLogo(file) {
+        if (!/^image\/(png|jpeg)$/.test(file.type)) return alert('Logo: PNG o JPG.');
+        const u = URL.createObjectURL(file); const img = new Image();
+        img.onload = () => { state.logo = img; URL.revokeObjectURL(u); showLogoInfo(file.name); renderPreview(); };
+        img.src = u;
+      }
+      function showLogoInfo(name) { els.logoInfo.textContent = 'Logo cargado: ' + name; els.logoInfo.classList.remove('hidden'); }
 
-      ctx.save(); if(state.mirror){ ctx.translate(fit.w,0); ctx.scale(-1,1); }
-      if(showAB) ctx.filter = pickLook(els.abIntensity.value,R);
-      ctx.drawImage(img, crop.sx,crop.sy,crop.sw,crop.sh, 0,0, fit.w,fit.h);
-      ctx.restore(); ctx.filter='none';
+      // --- cargar principal
+      async function loadMain(file) {
+        const isImg = /^image\/(png|jpeg|gif|webp)$/.test(file.type);
+        const isVid = file.type === 'video/mp4';
+        if (!(isImg || isVid)) return alert('Formato no soportado.');
+        if (isVid && file.size > MAX_VIDEO) return alert('Video > 15MB');
 
-      if(showAB) drawABExtra(ctx,fit.w,fit.h,R, state.logo);
+        state.file = file; state.kind = isImg ? 'image' : 'video';
+        if (state.url) URL.revokeObjectURL(state.url);
+        state.url = URL.createObjectURL(file);
+        $('fileName').textContent = `${file.name} • ${Math.round(file.size / 1024)} KB`;
+        $('fileInfo').classList.remove('hidden'); $('drop').classList.add('hidden');
+        setEnabled(true);
+        state.previewSeed = genSeed();
 
-      // invisibles
-      drawInvisible(ctx,fit.w,fit.h,R);
+        if (state.kind === 'video') { els.count.value = 1; els.count.disabled = true; els.countHelp.style.display = 'block'; els.videoOpts.style.display = 'flex'; }
+        else { els.count.disabled = false; els.countHelp.style.display = 'none'; els.videoOpts.style.display = 'none'; }
 
-      els.preview.appendChild(c);
-    };
-    img.src=state.url;
-  }else{
-    const wrap=document.createElement('div'); wrap.style.position='relative'; wrap.style.display='inline-block'; els.preview.appendChild(wrap);
-    const v=document.createElement('video'); v.src=state.url; v.controls=true; v.muted=true; v.playsInline=true; wrap.appendChild(v);
+        try {
+          state.baseHue = state.kind === 'image' ? await hueFromImage(state.url) : await hueFromVideo(state.url);
+        } catch (_) { state.baseHue = null; }
 
-    const apply=()=>{
-      const showAB=els.abPreview.checked && els.abEnable.checked;
-      if(state.overlay && state.overlay.parentNode) state.overlay.parentNode.removeChild(state.overlay); state.overlay=null;
-
-      // reset
-      v.style.position='static'; v.style.left='0px'; v.style.top='0px'; v.style.filter='contrast(1.01) saturate(1.01)';
-      v.style.transform=state.mirror?'scaleX(-1)':'none'; wrap.style.overflow='visible';
-
-      if(!showAB){
-        v.style.maxWidth='100%'; v.style.maxHeight='520px';
-        return;
+        renderPreview();
+        updateFormatNote();
       }
 
-      const ratio = pickAspect(v.videoWidth, v.videoHeight, R);
-      const crop  = computeCrop(v.videoWidth, v.videoHeight, ratio, R);
-      const out   = fitOut(crop.sw,crop.sh,ratio);
-      const fitC  = fit(out.w,out.h,960,540);
-
-      wrap.style.width=fitC.w+'px'; wrap.style.height=fitC.h+'px'; wrap.style.overflow='hidden';
-
-      const s = Math.min(fitC.w/crop.sw, fitC.h/crop.sh);
-      const videoW = Math.round(v.videoWidth*s), videoH=Math.round(v.videoHeight*s);
-      const offX = Math.round(-crop.sx*s), offY=Math.round(-crop.sy*s);
-
-      v.style.position='absolute'; v.style.width=videoW+'px'; v.style.height=videoH+'px'; v.style.left=offX+'px'; v.style.top=offY+'px';
-      v.style.transform=(state.mirror?'scaleX(-1) ':'')+'translateZ(0)';
-      v.style.filter=pickLook(els.abIntensity.value,R);
-
-      const oc=document.createElement('canvas'); oc.width=fitC.w; oc.height=fitC.h; oc.className='overlay';
-      oc.style.width=fitC.w+'px'; oc.style.height=fitC.h+'px';
-      const octx=oc.getContext('2d'); octx.imageSmoothingEnabled=true; octx.imageSmoothingQuality='high';
-
-      drawABExtra(octx,fitC.w,fitC.h,R,state.logo);
-      // guías invisibles solo en export; en preview no las dibujamos para no “ensuciar”
-      wrap.appendChild(oc); state.overlay=oc;
-    };
-
-    v.addEventListener('loadedmetadata',apply);
-    new ResizeObserver(apply).observe(wrap);
-    if(v.readyState>=1) apply();
-  }
-}
-
-// ---------- export
-els.downloadBtn.addEventListener('click',async()=>{
-  if(!state.file) return;
-  const base=(els.zipname.value||'variaciones_ads').toLowerCase().replace(/[^a-z0-9._-]+/g,'_');
-  const seedUI=(els.seed.value||'').trim(); const seedBase=seedUI||genSeed();
-  state.abort=false; els.cancelBtn.disabled=false; setProgress(0); els.downloadBtn.disabled=true;
-  const zip=new JSZip();
-
-  try{
-    if(state.kind==='image'){
-      const img=await blobToImage(state.file);
-      const N=Math.max(1,Math.min(10,parseInt(els.count.value||'1',10)));
-      for(let i=1;i<=N;i++){
-        const R=makeRNG(seedBase+`|img|${i}`);
-        const showAB=els.abEnable.checked;
-        let ow=img.width, oh=img.height;
-        let ratio=ow/oh, crop={sx:0,sy:0,sw:ow,sh:oh};
-        if(showAB){ ratio=pickAspect(ow,oh,R); crop=computeCrop(ow,oh,ratio,R); }
-        const out=fitOut(crop.sw,crop.sh,ratio); const max=2000; const sc=Math.min(1,max/Math.max(out.w,out.h));
-        const w=Math.round(out.w*sc), h=Math.round(out.h*sc);
-        const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-
-        ctx.save(); if(state.mirror){ctx.translate(w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
-        ctx.drawImage(img,crop.sx,crop.sy,crop.sw,crop.sh,0,0,w,h); ctx.restore(); ctx.filter='none';
-
-        if(showAB) drawABExtra(ctx,w,h,R,state.logo);
-        drawInvisible(ctx,w,h,R);
-
-        const blob=await new Promise(r=>c.toBlob(r,'image/png',0.95));
-        zip.file(`${base}_img_${i}.png`,blob,{binary:true});
-        setProgress(i*(100/N));
-        if(state.abort) break;
+      function clearAll() {
+        if (state.url) URL.revokeObjectURL(state.url);
+        state.file = null; state.kind = null; state.url = null; state.baseHue = null; state.mirror = false; state.abort = false; state.previewSeed = null;
+        $('preview').innerHTML = '<div class="help">Tu vista previa aparecerá aquí</div>';
+        $('mirrorBtn').textContent = 'Espejo ↔';
+        $('file').value = ''; setEnabled(false);
+        $('fileInfo').classList.add('hidden'); $('drop').classList.remove('hidden');
+        els.count.disabled = false; els.countHelp.style.display = 'none'; els.videoOpts.style.display = 'none';
       }
-    }else{
-      const info=await videoMeta(state.url);
-      const wantBoth=els.bothFormats.checked;
-      const mp4='video/mp4;codecs=h264';
-      const webm = (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') && 'video/webm;codecs=vp9')
-                || (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') && 'video/webm;codecs=vp8')
-                || (MediaRecorder.isTypeSupported('video/webm') && 'video/webm') || '';
-      const targets=[];
-      if(wantBoth){ if(MediaRecorder.isTypeSupported(mp4)) targets.push({label:'mp4',mime:mp4}); if(webm) targets.push({label:'webm',mime:webm}); }
-      else{ const sel=els.format.value; const ok=MediaRecorder.isTypeSupported(sel); const mime=ok?sel:(sel.includes('mp4')?webm:mp4); targets.push({label:mime.includes('mp4')?'mp4':'webm',mime}); }
+      function setEnabled(v) { $('downloadBtn').disabled = !v; $('clearBtn').disabled = !v; $('mirrorBtn').disabled = !v; }
 
-      for(let idx=0; idx<targets.length; idx++){
-        const t=targets[idx];
-        const formatSeed = els.differentPerFormat.checked ? `|${t.label}` : '|same';
-        const R=makeRNG(seedBase+`|vid${formatSeed}`);
+      // ---------- Preview (corrige recorte en video para cada formato/aspecto)
+      function renderPreview() {
+        if (!state.file) { $('preview').innerHTML = '<div class="help">Tu vista previa aparecerá aquí</div>'; return; }
+        $('preview').innerHTML = '';
+        const seed = (els.seed.value || '').trim() || state.previewSeed;
+        const R = makeRandomizers(seed);
 
-        const ratio = pickAspect(info.width, info.height, R);
-        const crop  = computeCrop(info.width, info.height, ratio, R);
-        const out   = {w:Math.min(info.width, Math.round(crop.sw)), h:Math.min(info.height, Math.round(crop.sh))};
+        if (state.kind === 'image') {
+          const img = new Image();
+          img.onload = () => {
+            const showAB = els.abPreview.checked && els.abEnable.checked;
+            if (showAB) {
+              const ab = buildAB('image', img.width, img.height, R);
+              const ratio = getRatio(ab.aspect, img.width, img.height);
+              const crop = cropFor(img.width, img.height, ratio, R);
+              const out = outSize(crop.sw, crop.sh, ratio);
+              const fit = fit(out.w, out.h, 960, 540);
+              const dpr = window.devicePixelRatio || 1;
+              const c = document.createElement('canvas'); c.width = Math.round(fit.w * dpr); c.height = Math.round(fit.h * dpr);
+              c.style.width = fit.w + 'px'; c.style.height = fit.h + 'px';
+              const ctx = c.getContext('2d'); ctx.scale(dpr, dpr); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+              ctx.save(); if (state.mirror) { ctx.translate(fit.w, 0); ctx.scale(-1, 1); } ctx.filter = lookFilter(ab.look, els.abIntensity.value); ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, fit.w, fit.h); ctx.restore(); ctx.filter = 'none';
+              drawLayout(ctx, fit.w, fit.h, ab.layout, { head: pickOrEmpty(els.heads.value, R) }, '#3b82f6');
+              drawABExtra(ctx, fit.w, fit.h, els.abExtra.value, state.logo, '#3b82f6', R);
+              if (els.optInspect.checked) drawGuides(ctx, fit.w, fit.h, R);
+              $('preview').appendChild(c);
+            } else {
+              const dim = fit(img.width, img.height, 960, 540);
+              const dpr = window.devicePixelRatio || 1;
+              const c = document.createElement('canvas'); c.width = Math.round(dim.w * dpr); c.height = Math.round(dim.h * dpr);
+              c.style.width = dim.w + 'px'; c.style.height = dim.h + 'px';
+              const ctx = c.getContext('2d'); ctx.scale(dpr, dpr); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+              ctx.save(); if (state.mirror) { ctx.translate(dim.w, 0); ctx.scale(-1, 1); } ctx.drawImage(img, 0, 0, dim.w, dim.h); ctx.restore();
+              if (els.optInspect.checked) drawGuides(ctx, dim.w, dim.h, R);
+              $('preview').appendChild(c);
+            }
+          };
+          img.src = state.url;
+        } else {
+          const wrap = document.createElement('div'); wrap.style.position = 'relative'; wrap.style.display = 'inline-block'; $('preview').appendChild(wrap);
+          const v = document.createElement('video'); v.src = state.url; v.controls = true; v.muted = true; v.playsInline = true; wrap.appendChild(v);
 
-        const v=document.createElement('video'); v.src=state.url; v.muted=true; v.playsInline=true;
-        await new Promise((res,rej)=>{ v.onloadedmetadata=res; v.onerror=rej; });
+          const applyAB = () => {
+            const showAB = els.abPreview.checked && els.abEnable.checked;
+            if (state.overlay && state.overlay.parentNode) state.overlay.parentNode.removeChild(state.overlay); state.overlay = null;
 
-        const fps=30;
-        const c=document.createElement('canvas'); c.width=out.w; c.height=out.h; const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-        const stream=c.captureStream(fps);
-        try{ const vs=v.captureStream(); const aud=vs.getAudioTracks(); if(aud && aud.length) stream.addTrack(aud[0]); }catch{}
+            // reset
+            v.style.position = 'static'; v.style.left = '0px'; v.style.top = '0px'; v.style.filter = 'contrast(1.01) saturate(1.01)'; v.style.transform = state.mirror ? 'scaleX(-1)' : 'none';
+            wrap.style.overflow = 'visible';
 
-        const chunks=[]; const rec=new MediaRecorder(stream,{mimeType:t.mime,videoBitsPerSecond:8_000_000}); rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
+            if (!showAB) {
+              v.style.maxWidth = '100%'; v.style.maxHeight = '520px';
+              if (els.optInspect.checked) {
+                const rect = v.getBoundingClientRect(); const cw = Math.max(1, Math.round(rect.width)), ch = Math.max(1, Math.round(rect.height));
+                const oc = mkOverlay(cw, ch); drawGuides(oc.getContext('2d'), cw, ch, R); wrap.appendChild(oc); state.overlay = oc;
+              }
+              return;
+            }
 
-        const clipS=Math.max(3,parseInt(els.sec.value||'12',10));
-        let startAt=0; if(!els.durFull.checked){ const maxStart=Math.max(0,(info.duration||0)-clipS); startAt=els.randStart.checked?Math.random()*maxStart:0; }
-        try{ v.currentTime=startAt; }catch{}
+            const ab = buildAB('video', v.videoWidth, v.videoHeight, R);
+            const ratio = getRatio(ab.aspect, v.videoWidth, v.videoHeight);
+            const crop = cropFor(v.videoWidth, v.videoHeight, ratio, R);
+            const out = outSize(crop.sw, crop.sh, ratio);
+            const fitOut = fit(out.w, out.h, 960, 540); // contenedor
+            wrap.style.width = fitOut.w + 'px'; wrap.style.height = fitOut.h + 'px';
+            wrap.style.overflow = 'hidden';
 
-        await new Promise(r=>{ v.onseeked=r; v.onloadeddata&&r(); });
-        await v.play(); rec.start(200);
+            // escala correcta (clave del desajuste): usar min(fitW/crop.sw, fitH/crop.sh)
+            const s = Math.min(fitOut.w / crop.sw, fitOut.h / crop.sh);
+            const videoW = Math.round(v.videoWidth * s);
+            const videoH = Math.round(v.videoHeight * s);
+            const offX = Math.round(-crop.sx * s);
+            const offY = Math.round(-crop.sy * s);
 
-        const tStart=startAt; const tEnd=els.durFull.checked?(info.duration||0):(tStart+clipS);
-        (function loop(){
-          if(state.abort){ try{v.pause();}catch{} if(rec.state!=='inactive') rec.stop(); return; }
-          if(v.paused||v.ended) return;
-          ctx.clearRect(0,0,out.w,out.h);
-          ctx.save(); if(state.mirror){ctx.translate(out.w,0);ctx.scale(-1,1);} ctx.filter=pickLook(els.abIntensity.value,R);
-          ctx.drawImage(v, crop.sx,crop.sy,crop.sw,crop.sh, 0,0, out.w,out.h); ctx.restore(); ctx.filter='none';
-          drawABExtra(ctx,out.w,out.h,R,state.logo);
-          drawInvisible(ctx,out.w,out.h,R);
-          const ct=v.currentTime; const pct=(els.durFull.checked?((ct-tStart)/(tEnd-tStart)):((ct-tStart)/clipS))*100; setProgress(Math.max(0,Math.min(100,pct)));
-          if(!els.durFull.checked && ct>=tEnd-0.03){ v.pause(); rec.stop(); return; }
-          requestAnimationFrame(loop);
-        })();
-        await new Promise(r=>{ rec.onstop=()=>r(); });
-        const blob=new Blob(chunks,{type:rec.mimeType});
-        zip.file(`${base}_video_1.${t.label}`,blob,{binary:true});
+            v.style.position = 'absolute';
+            v.style.width = videoW + 'px'; v.style.height = videoH + 'px';
+            v.style.left = offX + 'px'; v.style.top = offY + 'px';
+            v.style.transform = (state.mirror ? 'scaleX(-1) ' : '') + 'translateZ(0)';
+            v.style.filter = lookFilter(ab.look, els.abIntensity.value);
+
+            const oc = mkOverlay(fitOut.w, fitOut.h), octx = oc.getContext('2d');
+            drawLayout(octx, fitOut.w, fitOut.h, ab.layout, { head: pickOrEmpty(els.heads.value, R) }, '#3b82f6');
+            drawABExtra(octx, fitOut.w, fitOut.h, els.abExtra.value, state.logo, '#3b82f6', R);
+            if (els.optInspect.checked) drawGuides(octx, fitOut.w, fitOut.h, R);
+            wrap.appendChild(oc); state.overlay = oc;
+          };
+
+          v.addEventListener('loadedmetadata', applyAB);
+          new ResizeObserver(applyAB).observe(wrap);
+          if (v.readyState >= 1) applyAB();
+        }
       }
-      if(!state.abort) setProgress(100);
-    }
 
-    if(!state.abort){
-      zip.file('manifest.json', JSON.stringify({app:'Editor de Singularidad para ADS', version:'v24', seed:seedBase, abDifferentPerFormat:els.differentPerFormat.checked},null,2));
-      const zipBlob=await zip.generateAsync({type:'blob'}); download(zipBlob, `${base}.zip`);
-    }
-  }catch(err){ console.error(err); alert('No se pudo exportar. Prueba con Chrome/Edge y deja la pestaña activa.'); }
-  finally{ els.downloadBtn.disabled=false; els.cancelBtn.disabled=true; setTimeout(()=>setProgress(0),800); state.abort=false; }
-});
+      // --- Exportación (igual que preview pero escribiendo en canvas / mediaRecorder)
+      $('downloadBtn').addEventListener('click', async () => {
+        if (!state.file) return;
+        const wasInspect = els.optInspect.checked; if (wasInspect) { els.optInspect.checked = false; renderPreview(); }
 
-// ---------- funciones de dibujo/variaciones
-const LOOKS={
-  warm:{low:'contrast(1.02) saturate(1.06) sepia(.06) brightness(1.02)',mid:'contrast(1.05) saturate(1.12) sepia(.10) brightness(1.03)',high:'contrast(1.09) saturate(1.2) sepia(.16) brightness(1.04)'},
-  cool:{low:'contrast(1.03) saturate(1.06) hue-rotate(180deg)',mid:'contrast(1.06) saturate(1.1) hue-rotate(190deg)',high:'contrast(1.1) saturate(1.18) hue-rotate(200deg)'},
-  teal:{low:'contrast(1.04) saturate(1.14) hue-rotate(330deg) sepia(.05)',mid:'contrast(1.08) saturate(1.22) hue-rotate(330deg) sepia(.10)',high:'contrast(1.12) saturate(1.3) hue-rotate(330deg) sepia(.16)'},
-  pastel:{low:'contrast(.97) saturate(.92) brightness(1.04)',mid:'contrast(.95) saturate(.88) brightness(1.06)',high:'contrast(.92) saturate(.84) brightness(1.08)'},
-  bw:{low:'grayscale(1) contrast(1.04) brightness(1.02)',mid:'grayscale(1) contrast(1.08) brightness(1.03)',high:'grayscale(1) contrast(1.12) brightness(1.04)'}
-};
-function pickLook(intensity,R){ const keys=['warm','cool','teal','pastel','bw']; const k=keys[Math.floor(R()*keys.length)]; return LOOKS[k][intensity||'mid']; }
+        const seedUI = (els.seed.value || '').trim(); const seedBase = seedUI || genSeed();
+        state.abort = false; $('cancelBtn').disabled = false; setProgress(0); $('downloadBtn').disabled = true;
+        const base = sanitize(els.zipname.value);
+        const zip = new JSZip();
 
-function pickAspect(ow,oh,R){
-  const a=[]; if(els.arOrig.checked) a.push('orig'); if(els.ar11.checked) a.push('1:1'); if(els.ar45.checked) a.push('4:5'); if(els.ar916.checked) a.push('9:16'); if(els.ar169.checked) a.push('16:9');
-  const tag=a.length?a[Math.floor(R()*a.length)]:'orig';
-  if(tag==='orig') return ow/oh; if(tag==='1:1') return 1; if(tag==='4:5') return 4/5; if(tag==='9:16') return 9/16; if(tag==='16:9') return 16/9; return ow/oh;
-}
-function computeCrop(ow,oh,ratio,R){
-  const w=Math.min(ow,Math.round(oh*ratio)); const h=Math.min(oh,Math.round(ow/ratio));
-  const maxX=Math.max(0,ow-w), maxY=Math.max(0,oh-h);
-  const ox=Math.round((maxX/2) + (R()-.5)*maxX*.6), oy=Math.round((maxY/2) + (R()-.5)*maxY*.6);
-  return {sx:clamp(ox,0,maxX), sy:clamp(oy,0,maxY), sw:w, sh:h};
-}
-function fitOut(sw,sh,ratio){ let w=sw,h=Math.round(w/ratio); if(h>sh){ h=sh; w=Math.round(h*ratio);} return {w,h}; }
-function fit(w,h,maxW,maxH){ const r=Math.min(maxW/w,maxH/h,1); return {w:Math.round(w*r),h:Math.round(h*r)}; }
+        try {
+          if (state.kind === 'image') {
+            const img = await blobToImage(state.file);
+            const baseHue = state.baseHue ?? await hueFromImage(state.url);
+            const N = Math.max(1, Math.min(10, parseInt(els.count.value || '1', 10)));
+            for (let i = 1; i <= N; i++) {
+              const R = makeRandomizers(seedBase + `|img|${i}`);
+              const ab = els.abEnable.checked ? buildAB('image', img.width, img.height, R) : null;
+              const out = await renderImage(img, {
+                border: els.optBorder.checked, borderMulti: els.optBorderMulti.checked, shapes: els.optShapes.checked, stripes: els.optStripes.checked, centerWM: els.optCenterWM.checked,
+                ab, abExtra: els.abExtra.value
+              }, { borderColor: borderColor(i, baseHue, R) }, R);
+              zip.file(`${base}_img_${i}${ab ? `_${ab.tag}` : ''}.png`, out, { binary: true });
+              setProgress(i * (100 / N));
+              if (state.abort) break;
+            }
+          } else {
+            const info = await videoMeta(state.url);
+            const baseHue = state.baseHue ?? await hueFromVideo(state.url);
 
-function drawInvisible(ctx,w,h,R){
-  // borde
-  if(els.optBorder.checked){
-    const size=Math.max(1,Math.round(Math.min(w,h)*(0.004 + R()*0.003)));
-    ctx.save(); ctx.lineWidth=size; ctx.strokeStyle=`rgba(255,255,255,0.18)`; ctx.strokeRect(size/2,size/2,w-size,h-size); ctx.restore();
-  }
-  if(els.optBorderMulti.checked){
-    const s=Math.max(1,Math.round(Math.min(w,h)*0.006));
-    const cols=['rgba(255,80,80,0.18)','rgba(80,200,255,0.18)','rgba(120,255,120,0.18)','rgba(255,220,120,0.18)'];
-    ctx.save(); ctx.lineWidth=s;
-    ctx.strokeStyle=cols[0]; ctx.beginPath(); ctx.moveTo(s/2,s/2); ctx.lineTo(w-s/2,s/2); ctx.stroke();
-    ctx.strokeStyle=cols[1]; ctx.beginPath(); ctx.moveTo(w-s/2,s/2); ctx.lineTo(w-s/2,h-s/2); ctx.stroke();
-    ctx.strokeStyle=cols[2]; ctx.beginPath(); ctx.moveTo(w-s/2,h-s/2); ctx.lineTo(s/2,h-s/2); ctx.stroke();
-    ctx.strokeStyle=cols[3]; ctx.beginPath(); ctx.moveTo(s/2,h-s/2); ctx.lineTo(s/2,s/2); ctx.stroke();
-    ctx.restore();
-  }
-  if(els.optShapes.checked){
-    const n=3+Math.floor(R()*3);
-    for(let i=0;i<n;i++){
-      const s=Math.min(w,h)*(0.012+R()*0.014);
-      const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s;
-      ctx.save(); ctx.globalAlpha=0.006+R()*0.006; ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
-      ctx.fillStyle='hsl('+Math.floor(R()*360)+',60%,65%)';
-      const t=R();
-      if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); }
-      else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); }
-      else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); }
-      ctx.restore();
-    }
-  }
-  if(els.optStripes.checked){
-    const a=(R()*60-30)*Math.PI/180;
-    const sw=Math.min(w,h)*(0.006+R()*0.006);
-    const gap=sw*(3.5+R()*2);
-    const len=Math.sqrt(w*w+h*h)+sw*2;
-    ctx.save(); ctx.translate(w/2,h/2); ctx.rotate(a); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle='rgba(255,255,255,0.01)';
-    for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2);
-    ctx.restore();
-  }
-  if(els.optCenterWM.checked && state.logo){
-    const m=Math.min(w,h)*0.28; const r=Math.min(m/Math.max(state.logo.width,state.logo.height),1);
-    const lw=state.logo.width*r, lh=state.logo.height*r; ctx.save(); ctx.globalAlpha=0.01+R()*0.01;
-    ctx.drawImage(state.logo, Math.round((w-lw)/2), Math.round((h-lh)/2), Math.round(lw), Math.round(lh)); ctx.restore();
-  }
-}
-function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+            const wantBoth = els.bothFormats.checked;
+            const targets = [];
+            const mp4 = 'video/mp4;codecs=h264';
+            const webm = (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') && 'video/webm;codecs=vp9')
+              || (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') && 'video/webm;codecs=vp8')
+              || (MediaRecorder.isTypeSupported('video/webm') && 'video/webm') || '';
 
-function drawABExtra(ctx,w,h,R,logo){
-  // elegir extra
-  let mode=els.abExtra.value;
-  if(els.abExtraRandom.checked){
-    const opts=['vignette-soft','corner-shadows','rounded-soft','grain-light','tint-hue','dot-grid'];
-    if(logo) opts.push('logo-corner');
-    mode = opts[Math.floor(R()*opts.length)];
-  }
-  if(mode==='vignette-soft'){
-    const g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.25, w/2,h/2,Math.max(w,h)*0.85);
-    g.addColorStop(0,'rgba(0,0,0,0)');
-    g.addColorStop(1,'rgba(0,0,0,0.16)');
-    ctx.save(); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); ctx.restore();
-  }else if(mode==='corner-shadows'){
-    const s=Math.min(w,h)*0.24;
-    const draw=(x,y)=>{ const g=ctx.createRadialGradient(x,y,1,x,y,s); g.addColorStop(0,'rgba(0,0,0,0.18)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.save(); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,s,0,Math.PI*2); ctx.fill(); ctx.restore(); };
-    draw(0,0); draw(w,0); draw(0,h); draw(w,h);
-  }else if(mode==='rounded-soft'){
-    const pad=Math.round(Math.min(w,h)*0.02 + R()*Math.min(w,h)*0.01);
-    const r=Math.round(Math.min(w,h)*(0.06+R()*0.05));
-    ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.28)'; ctx.lineWidth=Math.max(2,Math.round(Math.min(w,h)*0.008));
-    roundRect(ctx,pad,pad,w-2*pad,h-2*pad,r); ctx.stroke(); ctx.restore();
-  }else if(mode==='grain-light'){
-    const nC=document.createElement('canvas'); nC.width=64; nC.height=64; const nctx=nC.getContext('2d');
-    const img=nctx.createImageData(64,64); for(let i=0;i<img.data.length;i+=4){ const g=128+Math.floor((R()-0.5)*28); img.data[i]=img.data[i+1]=img.data[i+2]=g; img.data[i+3]=7; } nctx.putImageData(img,0,0);
-    const p=ctx.createPattern(nC,'repeat'); ctx.save(); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle=p; ctx.fillRect(0,0,w,h); ctx.restore();
-  }else if(mode==='tint-hue'){
-    const hue = Math.floor(R()*360); const col = `hsla(${hue},18%,50%,0.06)`;
-    ctx.save(); ctx.fillStyle=col; ctx.fillRect(0,0,w,h); ctx.restore();
-  }else if(mode==='dot-grid'){
-    const step=Math.round(Math.min(w,h)*(0.04+R()*0.03));
-    ctx.save(); ctx.fillStyle='rgba(255,255,255,0.035)';
-    for(let y=step/2; y<h; y+=step) for(let x=step/2; x<w; x+=step) ctx.fillRect(x,y,1,1);
-    ctx.restore();
-  }else if(mode==='logo-corner' && logo){
-    const s=Math.min(w,h)*0.12; const r=Math.min(s/Math.max(logo.width,logo.height),1);
-    const lw=Math.round(logo.width*r), lh=Math.round(logo.height*r);
-    const pad=Math.round(Math.min(w,h)*0.02);
-    const pos=['tl','tr','br','bl'][Math.floor(R()*4)];
-    let x=pad,y=pad; if(pos==='tr') x=w-pad-lw; if(pos==='br'){x=w-pad-lw;y=h-pad-lh;} if(pos==='bl') y=h-pad-lh;
-    ctx.save(); ctx.globalAlpha=0.75; ctx.drawImage(logo,x,y,lw,lh); ctx.restore();
-  }
-}
+            if (wantBoth) { if (MediaRecorder.isTypeSupported(mp4)) targets.push({ label: 'mp4', mime: mp4 }); if (webm) targets.push({ label: 'webm', mime: webm }); }
+            else { const sel = els.format.value; const ok = MediaRecorder.isTypeSupported(sel); const mime = ok ? sel : (sel.includes('mp4') ? webm : mp4); targets.push({ label: mime.includes('mp4') ? 'mp4' : 'webm', mime }); }
 
-// ---------- util varias
-function setProgress(p){ els.bar.style.width=Math.max(0,Math.min(100,p))+'%'; }
-function download(blob,name){ const a=document.createElement('a'); const u=URL.createObjectURL(blob); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1200); }
-function blobToImage(b){ return new Promise((res,rej)=>{ const u=URL.createObjectURL(b); const i=new Image(); i.onload=()=>{URL.revokeObjectURL(u);res(i)}; i.onerror=rej; i.src=u; }); }
-function videoMeta(u){ return new Promise((res,rej)=>{ const v=document.createElement('video'); v.src=u; v.onloadedmetadata=()=>res({width:v.videoWidth,height:v.videoHeight,duration:v.duration}); v.onerror=rej; }); }
-function genSeed(){ const d=new Date(); return `ads-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.random().toString(16).slice(2,6)}`; }
-function makeRNG(seed){ const r=mul32(hash32(seed||'seed')); const fn=()=>r(); fn.int=(a,b)=>Math.floor(r()*(b-a+1))+a; return fn; }
-function hash32(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
-function mul32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
-function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-async function hueFromImage(url){ const i=await blobToImage(await (await fetch(url)).blob()).catch(()=>null); return 200; }
-async function hueFromVideo(url){ return 200; } // estimación no crítica en esta versión
-})();
-</script>
+            for (let idx = 0; idx < targets.length; idx++) {
+              const t = targets[idx]; const R = makeRandomizers(seedBase + `|vid|${t.label}`);
+              const ab = els.abEnable.checked ? buildAB('video', info.width, info.height, R) : null;
+              const blob = await renderVideo(state.url, {
+                border: els.optBorder.checked, borderMulti: els.optBorderMulti.checked, shapes: els.optShapes.checked, stripes: els.optStripes.checked, centerWM: els.optCenterWM.checked, mirror: state.mirror,
+                ab, abExtra: els.abExtra.value
+              }, info, {
+                mime: t.mime, bps: 8_000_000, full: els.durFull.checked, maxSeconds: parseInt(els.sec.value || '12', 10), randStart: els.randStart.checked, borderColor: borderColor(1, baseHue, R),
+                onProgress: p => {
+                  if (targets.length === 1) setProgress(p); else { const basePct = (idx / targets.length) * 100; const spanPct = (1 / targets.length) * 100; setProgress(basePct + p * (spanPct / 100)); }
+                }
+              }, R);
+              if (state.abort) break;
+              zip.file(`${base}_video_1${ab ? `_${ab.tag}` : ''}.${t.label}`, blob, { binary: true });
+            }
+            if (!state.abort) setProgress(100);
+          }
+
+          if (!state.abort) {
+            zip.file('manifest.json', JSON.stringify({ app: 'Editor de Singularidad para ADS', version: 'v23', seed: (els.seed.value || null) }, null, 2));
+            const zipBlob = await zip.generateAsync({ type: 'blob' }); download(zipBlob, `${base}.zip`);
+          }
+        } catch (err) { console.error(err); alert('No se pudo exportar. Usa Chrome/Edge y deja la pestaña activa.'); }
+        finally { $('downloadBtn').disabled = false; $('cancelBtn').disabled = true; setTimeout(() => setProgress(0), 800); state.abort = false; if (wasInspect) { els.optInspect.checked = true; renderPreview(); } }
+      });
+
+      // ---------- Render imagen
+      async function renderImage(img, opts, vctx, R) {
+        const ab = opts.ab;
+        let ow = img.width, oh = img.height;
+        let ratio = ow / oh, crop = { sx: 0, sy: 0, sw: ow, sh: oh };
+        if (ab) { ratio = getRatio(ab.aspect, ow, oh); crop = cropFor(ow, oh, ratio, R); }
+        const out = outSize(crop.sw, crop.sh, ratio), maxSide = 2000, scale = Math.min(1, maxSide / Math.max(out.w, out.h));
+        const w = Math.round(out.w * scale), h = Math.round(out.h * scale);
+        const c = document.createElement('canvas'); c.width = w; c.height = h; const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        ctx.save(); if (state.mirror) { ctx.translate(w, 0); ctx.scale(-1, 1); } if (ab) { ctx.filter = lookFilter(ab.look, els.abIntensity.value); } ctx.drawImage(img, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, w, h); ctx.restore(); ctx.filter = 'none';
+        if (ab) { drawLayout(ctx, w, h, ab.layout, { head: pickOrEmpty(els.heads.value, R) }, '#3b82f6'); drawABExtra(ctx, w, h, els.abExtra.value, state.logo, '#3b82f6', R); }
+        if (opts.border) { if (opts.borderMulti) borderMulti(ctx, w, h, state.baseHue, R); else borderSoft(ctx, w, h, vctx.borderColor, R); }
+        if (opts.shapes) shapes(ctx, w, h, R); if (opts.stripes) stripes(ctx, w, h, R); if (opts.centerWM) watermarkCenter(ctx, w, h, state.logo, R);
+        return await new Promise(r => c.toBlob(r, 'image/png', 0.95));
+      }
+
+      // ---------- Render video
+      async function renderVideo(url, opts, meta, recCfg, R) {
+        const v = document.createElement('video'); v.src = url; v.muted = true; v.playsInline = true; await new Promise((res, rej) => { v.onloadedmetadata = res; v.onerror = rej; });
+        const fps = 30;
+        let ow = meta.width, oh = meta.height; const ab = opts.ab;
+        let ratio = ow / oh, crop = { sx: 0, sy: 0, sw: ow, sh: oh }; if (ab) { ratio = getRatio(ab.aspect, ow, oh); crop = cropFor(ow, oh, ratio, R); }
+        const out = outSize(crop.sw, crop.sh, ratio); out.w = Math.min(out.w, ow); out.h = Math.min(out.h, oh);
+        const c = document.createElement('canvas'); c.width = out.w; c.height = out.h; const ctx = c.getContext('2d'); ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+        const str = c.captureStream(fps);
+        try { const vs = v.captureStream(); const aud = vs.getAudioTracks(); if (aud && aud.length) str.addTrack(aud[0]); } catch (_) { }
+        const chunks = []; const rec = new MediaRecorder(str, { mimeType: recCfg.mime, videoBitsPerSecond: recCfg.bps || 8_000_000 }); rec.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+        const clipS = Math.max(3, recCfg.maxSeconds || 12); let startAt = 0; if (!recCfg.full) { const maxStart = Math.max(0, (meta.duration || 0) - clipS); startAt = recCfg.randStart ? Math.random() * maxStart : 0; }
+        return await new Promise(async (res, rej) => {
+          let raf; rec.onstop = () => { cancelAnimationFrame(raf); res(new Blob(chunks, { type: rec.mimeType })); }; rec.onerror = e => rej(e);
+          try { v.currentTime = startAt; } catch (_) { }
+          await new Promise(r => { v.onseeked = r; v.onloadeddata && r(); });
+          await v.play(); rec.start(200);
+          const tStart = startAt, tEnd = recCfg.full ? (meta.duration || 0) : (tStart + clipS);
+          (function loop() {
+            if (state.abort) {
+              try { v.pause(); } catch (_) { }
+              if (rec.state !== 'inactive') rec.stop(); return;
+            }
+            if (v.paused || v.ended) return;
+            ctx.clearRect(0, 0, out.w, out.h);
+            ctx.save(); if (opts.mirror) { ctx.translate(out.w, 0); ctx.scale(-1, 1); } if (ab) ctx.filter = lookFilter(ab.look, els.abIntensity.value);
+            ctx.drawImage(v, crop.sx, crop.sy, crop.sw, crop.sh, 0, 0, out.w, out.h); ctx.restore(); ctx.filter = 'none';
+            if (ab) { drawLayout(ctx, out.w, out.h, ab.layout, { head: pickOrEmpty(els.heads.value, R) }, '#3b82f6'); drawABExtra(ctx, out.w, out.h, els.abExtra.value, state.logo, '#3b82f6', R); }
+            if (opts.border) { if (opts.borderMulti) borderMulti(ctx, out.w, out.h, state.baseHue, R); else borderSoft(ctx, out.w, out.h, recCfg.borderColor, R); }
+            if (opts.shapes) shapes(ctx, out.w, out.h, R); if (opts.stripes) stripes(ctx, out.w, out.h, R); if (opts.centerWM) watermarkCenter(ctx, out.w, out.h, state.logo, R);
+            const t = v.currentTime; const target = recCfg.full ? (meta.duration || tEnd) : clipS; const pct = (recCfg.full ? ((t - tStart) / (target - tStart)) : ((t - tStart) / clipS)) * 100; recCfg.onProgress?.(Math.max(0, Math.min(100, pct)));
+            if (!recCfg.full && t >= tEnd - 0.03) { v.pause(); rec.stop(); return; }
+            raf = requestAnimationFrame(loop);
+          })();
+          v.onended = () => { if (rec.state !== 'inactive') { recCfg.onProgress?.(100); rec.stop(); } };
+        });
+      }
+
+      // ---------- A/B recipe
+      const LOOKS = {
+        warm: { low: 'contrast(1.02) saturate(1.06) sepia(.06) brightness(1.02)', mid: 'contrast(1.05) saturate(1.12) sepia(.10) brightness(1.03)', high: 'contrast(1.09) saturate(1.2) sepia(.16) brightness(1.04)' },
+        cool: { low: 'contrast(1.03) saturate(1.06) hue-rotate(180deg)', mid: 'contrast(1.06) saturate(1.1) hue-rotate(190deg)', high: 'contrast(1.1) saturate(1.18) hue-rotate(200deg)' },
+        teal: { low: 'contrast(1.04) saturate(1.14) hue-rotate(330deg) sepia(.05)', mid: 'contrast(1.08) saturate(1.22) hue-rotate(330deg) sepia(.10)', high: 'contrast(1.12) saturate(1.3) hue-rotate(330deg) sepia(.16)' },
+        pastel: { low: 'contrast(.97) saturate(.92) brightness(1.04)', mid: 'contrast(.95) saturate(.88) brightness(1.06)', high: 'contrast(.92) saturate(.84) brightness(1.08)' },
+        bw: { low: 'grayscale(1) contrast(1.04) brightness(1.02)', mid: 'grayscale(1) contrast(1.08) brightness(1.03)', high: 'grayscale(1) contrast(1.12) brightness(1.04)' }
+      };
+      const LAYOUTS = ['headline-top', 'bar-bottom', 'badge-right', 'none'];
+      function buildAB(kind, ow, oh, R) {
+        const aspects = getAspects(); const aspect = pick(aspects, R);
+        const lookKey = pick(['warm', 'cool', 'teal', 'pastel', 'bw'], R);
+        const layout = (els.abLayout.value === 'auto') ? pick(LAYOUTS, R) : els.abLayout.value;
+        const tag = `${aspect.replace(':', 'x')}_${lookKey}_${layout === 'none' ? 'plain' : 'lyt'}`;
+        return { aspect, look: lookKey, layout, tag };
+      }
+
+      // ---------- Layouts (sin CTA)
+      function drawLayout(ctx, w, h, layout, texts, brand) {
+        if (!layout || layout === 'none') return;
+        ctx.save();
+        const pad = Math.round(Math.min(w, h) * 0.03), round = Math.round(pad * 0.5);
+        const col = 'rgba(59,130,246,0.88)'; const text = '#fff', shadow = 'rgba(0,0,0,.35)';
+
+        if (layout === 'bar-bottom') {
+          const bh = Math.round(h * 0.16);
+          roundRect(ctx, pad, h - bh - pad, w - 2 * pad, bh, round); ctx.fillStyle = col; ctx.fill();
+          const fs = Math.max(18, Math.round(bh * 0.44)); ctx.fillStyle = text; ctx.font = `800 ${fs}px system-ui,-apple-system,Segoe UI,Roboto,Arial`;
+          ctx.textBaseline = 'alphabetic'; ctx.shadowColor = shadow; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+          clampText(ctx, texts.head || '', pad * 1.6, h - pad * 1.8, w - 3.2 * pad, fs, true);
+        } else if (layout === 'headline-top') {
+          const th = Math.round(h * 0.14);
+          roundRect(ctx, pad, pad, w - 2 * pad, th, round); ctx.fillStyle = col; ctx.fill();
+          const fs = Math.max(18, Math.round(th * 0.48)); ctx.fillStyle = text; ctx.font = `800 ${fs}px system-ui,-apple-system,Segoe UI,Roboto,Arial`;
+          ctx.textBaseline = 'top'; ctx.shadowColor = shadow; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+          clampText(ctx, texts.head || '', pad * 1.6, pad * 1.2, w - 3.2 * pad, fs, true);
+        } else if (layout === 'badge-right') {
+          const bw = Math.round(w * 0.26), bh = Math.round(h * 0.22), x = w - pad - bw, y = Math.round(pad * 1.2);
+          roundRect(ctx, x, y, bw, bh, round); ctx.fillStyle = col; ctx.fill();
+          const fs = Math.max(16, Math.round(bh * 0.32)); ctx.fillStyle = text; ctx.textAlign = 'center'; ctx.shadowColor = shadow; ctx.shadowBlur = 8; ctx.shadowOffsetY = 2;
+          ctx.font = `800 ${fs}px system-ui,-apple-system,Segoe UI,Roboto,Arial`;
+          clampText(ctx, texts.head || '', x + bw / 2, y + pad, bw - pad * 1.3, fs, true, 'center');
+        }
+        ctx.restore();
+      }
+
+      // ---------- A/B extra (nuevo)
+      function drawABExtra(ctx, w, h, mode, logo, brand, R) {
+        if (mode === 'logo-corner' && logo) {
+          const s = Math.min(w, h) * 0.14; const r = Math.min(s / Math.max(logo.width, logo.height), 1);
+          const lw = Math.round(logo.width * r), lh = Math.round(logo.height * r);
+          const pos = ['tl', 'tr', 'br', 'bl'][Math.floor(R.rng() * 4)];
+          const pad = Math.round(Math.min(w, h) * 0.02);
+          let x = pad, y = pad; if (pos === 'tr') x = w - pad - lw; if (pos === 'br') { x = w - pad - lw; y = h - pad - lh; } if (pos === 'bl') { y = h - pad - lh; }
+          ctx.save(); ctx.globalAlpha = 0.75; ctx.drawImage(logo, x, y, lw, lh); ctx.restore();
+        } else if (mode === 'frame-rounded') {
+          const pad = Math.round(Math.min(w, h) * 0.02 + R.rng() * Math.min(w, h) * 0.01);
+          const r = Math.round(Math.min(w, h) * (0.04 + R.rng() * 0.05));
+          ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = Math.max(2, Math.round(Math.min(w, h) * 0.008));
+          roundRect(ctx, pad, pad, w - 2 * pad, h - 2 * pad, r); ctx.stroke(); ctx.restore();
+        } else if (mode === 'vignette-boost') {
+          const grd = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.2, w / 2, h / 2, Math.max(w, h) * 0.8);
+          grd.addColorStop(0, 'rgba(0,0,0,0)'); grd.addColorStop(1, 'rgba(0,0,0,0.28)');
+          ctx.save(); ctx.fillStyle = grd; ctx.fillRect(0, 0, w, h); ctx.restore();
+        }
+      }
+
+      // ---------- Invisibles y guías
+      const CFG = { watermarkOpacity: [0.01, 0.02], shapeAlpha: [0.006, 0.012], shapeSize: [0.012, 0.026], borderWidth: [0.004, 0.007], borderAlpha: 0.2, stripeAlpha: [0.006, 0.014], stripeWidth: [0.006, 0.012], stripeGapMul: [3.5, 5.5], stripeAngle: [-30, 30] };
+      function borderSoft(ctx, w, h, color, R) { const s = Math.max(1, Math.round(Math.min(w, h) * (R.rand(CFG.borderWidth)))); ctx.save(); ctx.lineWidth = s; ctx.strokeStyle = withA(color, CFG.borderAlpha); ctx.strokeRect(s / 2, s / 2, w - s, h - s); ctx.restore(); }
+      function borderMulti(ctx, w, h, baseHue, R) {
+        const s = Math.max(1, Math.round(Math.min(w, h) * (0.004 + R.r() * 0.003))); const hues = [0, 90, 180, 270].map(d => wrap((baseHue ?? 200) + d + 30 * R.r())); const cols = hues.map(h => `hsla(${h},${60 + 8 * R.r()}%,${62 + 8 * R.r()}%,0.18)`); ctx.save(); ctx.lineWidth = s;
+        ctx.strokeStyle = cols[0]; ctx.beginPath(); ctx.moveTo(s / 2, s / 2); ctx.lineTo(w - s / 2, s / 2); ctx.stroke();
+        ctx.strokeStyle = cols[1]; ctx.beginPath(); ctx.moveTo(w - s / 2, s / 2); ctx.lineTo(w - s / 2, h - s / 2); ctx.stroke();
+        ctx.strokeStyle = cols[2]; ctx.beginPath(); ctx.moveTo(w - s / 2, h - s / 2); ctx.lineTo(s / 2, h - s / 2); ctx.stroke();
+        ctx.strokeStyle = cols[3]; ctx.beginPath(); ctx.moveTo(s / 2, h - s / 2); ctx.lineTo(s / 2, s / 2); ctx.stroke(); ctx.restore();
+      }
+      function shapes(ctx, w, h, R) { const n = R.i(3, 5); for (let k = 0; k < n; k++) { const s = Math.min(w, h) * R.rand(CFG.shapeSize), x = R.rnd(s, w - s), y = R.rnd(s, h - s); ctx.save(); ctx.translate(x, y); ctx.rotate((R.r() * 14 - 7) * Math.PI / 180); ctx.globalAlpha = R.rand(CFG.shapeAlpha); ctx.fillStyle = `hsl(${Math.floor(R.r() * 360)},60%,65%)`; const t = R.r(); if (t < .34) { ctx.beginPath(); ctx.arc(0, 0, s * 0.4, 0, Math.PI * 2); ctx.fill(); } else if (t < .67) { roundRect(ctx, -s * 0.45, -s * 0.25, s * 0.9, s * 0.5, s * 0.12); ctx.fill(); } else { ctx.beginPath(); ctx.moveTo(-s * 0.35, s * 0.35); ctx.lineTo(0, -s * 0.35); ctx.lineTo(s * 0.35, s * 0.35); ctx.closePath(); ctx.fill(); } ctx.restore(); } }
+      function stripes(ctx, w, h, R) { const a = R.rand(CFG.stripeAngle) * Math.PI / 180, sw = Math.min(w, h) * R.rand(CFG.stripeWidth), gap = sw * R.rand(CFG.stripeGapMul), len = Math.sqrt(w * w + h * h) + sw * 2, col = withA(`hsl(${Math.floor(R.r() * 360)},60%,65%)`, R.rand(CFG.stripeAlpha)); ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(a); ctx.globalCompositeOperation = 'soft-light'; ctx.fillStyle = col; for (let x = -len; x <= len; x += gap) ctx.fillRect(x, -len, sw, len * 2); ctx.restore(); }
+      function watermarkCenter(ctx, w, h, logo, R) { if (!logo) return; const a = R.rand(CFG.watermarkOpacity); const m = Math.min(w, h) * 0.28; const r = Math.min(m / Math.max(logo.width, logo.height), 1); const lw = logo.width * r, lh = logo.height * r; ctx.save(); ctx.globalAlpha = a; ctx.drawImage(logo, Math.round((w - lw) / 2), Math.round((h - lh) / 2), Math.round(lw), Math.round(lh)); ctx.restore(); }
+      // guías preview (no export)
+      function drawGuides(ctx, w, h, R) { guideBorder(ctx, w, h); if (els.optBorderMulti.checked) guideBorderMulti(ctx, w, h); guideShapes(ctx, w, h, R); guideStripes(ctx, w, h, R); guideWM(ctx, w, h); }
+      function guideBorder(ctx, w, h) { const s = Math.max(1, Math.round(Math.min(w, h) * 0.006)); ctx.save(); ctx.lineWidth = s; ctx.strokeStyle = 'rgba(255,255,0,.65)'; ctx.setLineDash([8, 6]); ctx.strokeRect(s / 2, s / 2, w - s, h - s); ctx.restore(); }
+      function guideBorderMulti(ctx, w, h) { const s = Math.max(1, Math.round(Math.min(w, h) * 0.006)); const cols = ['rgba(255,80,80,.8)', 'rgba(80,200,255,.8)', 'rgba(120,255,120,.8)', 'rgba(255,220,120,.8)']; ctx.save(); ctx.lineWidth = s; ctx.setLineDash([10, 5]); ctx.strokeStyle = cols[0]; ctx.beginPath(); ctx.moveTo(s / 2, s / 2); ctx.lineTo(w - s / 2, s / 2); ctx.stroke(); ctx.strokeStyle = cols[1]; ctx.beginPath(); ctx.moveTo(w - s / 2, s / 2); ctx.lineTo(w - s / 2, h - s / 2); ctx.stroke(); ctx.strokeStyle = cols[2]; ctx.beginPath(); ctx.moveTo(w - s / 2, h - s / 2); ctx.lineTo(s / 2, h - s / 2); ctx.stroke(); ctx.strokeStyle = cols[3]; ctx.beginPath(); ctx.moveTo(s / 2, h - s / 2); ctx.lineTo(s / 2, s / 2); ctx.stroke(); ctx.restore(); }
+      function guideShapes(ctx, w, h, R) { const n = R.i(3, 5); for (let i = 0; i < n; i++) { const s = Math.min(w, h) * R.rand(CFG.shapeSize), x = R.rnd(s, w - s), y = R.rnd(s, h - s); ctx.save(); ctx.translate(x, y); ctx.rotate((R.r() * 14 - 7) * Math.PI / 180); ctx.globalAlpha = .28; ctx.fillStyle = 'rgba(0,255,255,.18)'; ctx.strokeStyle = 'rgba(0,255,255,.85)'; ctx.lineWidth = Math.max(1, s * 0.03); const t = R.r(); if (t < .34) { ctx.beginPath(); ctx.arc(0, 0, s * 0.4, 0, Math.PI * 2); ctx.fill(); ctx.stroke(); } else if (t < .67) { roundRect(ctx, -s * 0.45, -s * 0.25, s * 0.9, s * 0.5, s * 0.12); ctx.fill(); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(-s * 0.35, s * 0.35); ctx.lineTo(0, -s * 0.35); ctx.lineTo(s * 0.35, s * 0.35); ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.restore(); } }
+      function guideStripes(ctx, w, h, R) { const a = ((CFG.stripeAngle[0] + CFG.stripeAngle[1]) / 2) * Math.PI / 180, sw = Math.min(w, h) * ((CFG.stripeWidth[0] + CFG.stripeWidth[1]) / 2), gap = sw * ((CFG.stripeGapMul[0] + CFG.stripeGapMul[1]) / 2), len = Math.sqrt(w * w + h * h) + sw * 2; ctx.save(); ctx.translate(w / 2, h / 2); ctx.rotate(a); ctx.fillStyle = 'rgba(255,0,200,.15)'; for (let x = -len; x <= len; x += gap) ctx.fillRect(x, -len, sw, len * 2); ctx.restore(); }
+      function guideWM(ctx, w, h) { const m = Math.min(w, h) * 0.28; const lw = m, lh = m * .6; const x = Math.round((w - lw) / 2), y = Math.round((h - lh) / 2); ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,.9)'; ctx.setLineDash([6, 4]); ctx.lineWidth = Math.max(1, Math.min(w, h) * 0.004); ctx.strokeRect(x, y, lw, lh); ctx.restore(); }
+
+      // ---------- util color/ratio/recorte
+      function getAspects() { const a = []; if (els.arOrig.checked) a.push('orig'); if (els.ar11.checked) a.push('1:1'); if (els.ar45.checked) a.push('4:5'); if (els.ar916.checked) a.push('9:16'); if (els.ar169.checked) a.push('16:9'); return a.length ? a : ['orig']; }
+      function pick(arr, R) { return arr[Math.floor((R.r() * arr.length)) % arr.length]; }
+      function pickOrEmpty(val, R) { const arr = (val || '').split('|').map(s => s.trim()).filter(Boolean); return arr.length ? pick(arr, R) : ''; }
+      function lookFilter(look, intensity) { const L = LOOKS[look] || LOOKS.warm; return L[intensity || 'mid'] || L.mid; }
+      function getRatio(tag, ow, oh) { if (tag === 'orig') return ow / oh; if (tag === '1:1') return 1; if (tag === '4:5') return 4 / 5; if (tag === '9:16') return 9 / 16; if (tag === '16:9') return 16 / 9; return ow / oh; }
+      function cropFor(ow, oh, ratio, R) { const w = Math.min(ow, Math.round(oh * ratio)); const h = Math.min(oh, Math.round(ow / ratio)); const maxX = Math.max(0, ow - w), maxY = Math.max(0, oh - h); const ox = Math.round((maxX / 2) + (R.r() - .5) * maxX * .6), oy = Math.round((maxY / 2) + (R.r() - .5) * maxY * .6); return { sx: clamp(ox, 0, maxX), sy: clamp(oy, 0, maxY), sw: w, sh: h }; }
+      function outSize(sw, sh, ratio) { let w = sw, h = Math.round(w / ratio); if (h > sh) { h = sh; w = Math.round(h * ratio); } return { w, h }; }
+      function fit(w, h, maxW, maxH) { const r = Math.min(maxW / w, maxH / h, 1); return { w: Math.round(w * r), h: Math.round(h * r) }; }
+      function borderColor(i, baseHue, R) { const GOLD = 137.508; const wrap = h => ((h % 360) + 360) % 360; let h = wrap((baseHue ?? 200) + 180 + i * GOLD); if (baseHue != null) { const d = Math.min(Math.abs(h - baseHue), 360 - Math.abs(h - baseHue)); if (d < 40) h = wrap(h + 60); } const s = 62 + (R.r() * 6), l = 60 + (R.r() * 6); return `hsl(${h},${s}%,${l}%)`; }
+      function hueFromImage(u) { return new Promise((res, rej) => { const i = new Image(); i.onload = () => { const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d'); x.drawImage(i, 0, 0, 64, 64); const d = x.getImageData(0, 0, 64, 64).data; let sx = 0, sy = 0; for (let k = 0; k < d.length; k += 16) { const [h, s] = rgb2hsl(d[k], d[k + 1], d[k + 2]); const rad = h * Math.PI / 180; sx += Math.cos(rad) * s; sy += Math.sin(rad) * s; } res(wrap(Math.atan2(sy, sx) * 180 / Math.PI)); }; i.onerror = rej; i.src = u; }); }
+      function hueFromVideo(u) { return new Promise(async (res, rej) => { const v = document.createElement('video'); v.src = u; v.muted = true; v.playsInline = true; v.onloadeddata = () => { try { v.currentTime = Math.min(.2, v.duration || 0); } catch (_) { } const c = document.createElement('canvas'); c.width = 64; c.height = 64; const x = c.getContext('2d'); x.drawImage(v, 0, 0, 64, 64); const d = x.getImageData(0, 0, 64, 64).data; let sx = 0, sy = 0; for (let k = 0; k < d.length; k += 16) { const [h, s] = rgb2hsl(d[k], d[k + 1], d[k + 2]); const rad = h * Math.PI / 180; sx += Math.cos(rad) * s; sy += Math.sin(rad) * s; } res(wrap(Math.atan2(sy, sx) * 180 / Math.PI)); }; v.onerror = rej; }); }
+      function rgb2hsl(r, g, b) { r /= 255; g /= 255; b /= 255; const mx = Math.max(r, g, b), mn = Math.min(r, g, b); let h, s, l = (mx + mn) / 2; if (mx === mn) { h = 0; s = 0; } else { const d = mx - mn; s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn); switch (mx) { case r: h = (g - b) / d + (g < b ? 6 : 0); break; case g: h = (b - r) / d + 2; break; case b: h = (r - g) / d + 4; } h *= 60; } return [h, s, l]; }
+      const wrap = h => ((h % 360) + 360) % 360; const withA = (hsl, a) => hsl.replace('hsl', 'hsla').replace(')', `, ${a})`);
+      function mkOverlay(w, h) { const c = document.createElement('canvas'); c.width = w; c.height = h; c.className = 'overlay-guide'; c.style.width = w + 'px'; c.style.height = h + 'px'; c.getContext('2d').imageSmoothingEnabled = true; c.getContext('2d').imageSmoothingQuality = 'high'; return c; }
+      function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+      function clampText(ctx, text, x, y, maxW, lh, bold = false, align = 'left') { const ws = (text || '').split(/\s+/); let line = '', yy = y, lines = []; for (let i = 0; i < ws.length; i++) { const t = (line ? line + ' ' : '') + ws[i]; const w = ctx.measureText(t).width; if (w > maxW && i > 0) { lines.push(line); line = ws[i]; } else line = t; } if (line) lines.push(line); const maxLines = 2; ctx.textAlign = align; for (let i = 0; i < Math.min(lines.length, maxLines); i++) { ctx.fillText(lines[i], align === 'center' ? x : x, yy + i * lh * 1.12); } }
+      function download(blob, name) { const a = document.createElement('a'); const u = URL.createObjectURL(blob); a.href = u; a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(u), 1500); }
+      function sanitize(s) { return (s || '').toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9._-]+/g, '_').replace(/^_+|_+$/g, '') || 'variaciones_ads'; }
+      function setProgress(p) { $('bar').style.width = Math.max(0, Math.min(100, p)) + '%'; }
+      function genSeed() { const d = new Date(); return `ads-${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}-${Math.random().toString(16).slice(2, 6)}`; }
+      function makeRandomizers(seed) { const r = mul32(hash32(seed || 'seed')); return { r, rdn: (a, b) => r() * (b - a) + a, i: (a, b) => Math.floor(r() * (b - a + 1)) + a, rnd: (a, b) => r() * (b - a) + a, rand: ([a, b]) => r() * (b - a) + a, rndInt: (a, b) => Math.floor(r() * (b - a + 1)) + a }; }
+      function hash32(s) { let h = 2166136261 >>> 0; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+      function mul32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; } }
+      const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
+      const borderColor = (i, baseHue, R) => { const GOLD = 137.508; let h = ((baseHue ?? 200) + 180 + i * GOLD) % 360; if (baseHue != null) { const d = Math.min(Math.abs(h - baseHue), 360 - Math.abs(h - baseHue)); if (d < 40) h = (h + 60) % 360; } const s = 62 + (R.r() * 6), l = 60 + (R.r() * 6); return `hsl(${h},${s}%,${l}%)`; };
+    })();
+  </script>
 </body>
+
 </html>
