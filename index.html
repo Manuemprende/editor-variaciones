@@ -135,6 +135,13 @@
           </select>
           <span id="formatNote" class="help"></span>
         </div>
+        <!-- NUEVO: Exportar ambos -->
+        <div style="display:flex; gap:12px; align-items:center; margin-top:8px">
+          <label style="display:flex;align-items:center;gap:8px">
+            <input id="bothFormats" type="checkbox"/> <b>Exportar ambos formatos (MP4 + WebM)</b>
+          </label>
+        </div>
+        <div id="bothNote" class="help" style="margin-top:6px"></div>
       </div>
 
       <div class="field" style="flex-direction:column; align-items:flex-start">
@@ -189,6 +196,7 @@
     logoDrop: $('dropLogo'), logoFile: $('logoFile'), logoInfo: $('logoInfo'), clearLogo: $('clearLogo'),
     zipname: $('zipname'), videoOpts: $('videoOpts'),
     durFull: $('durFull'), durClip: $('durClip'), sec: $('sec'), format: $('format'), formatNote: $('formatNote'),
+    bothFormats: $('bothFormats'), bothNote: $('bothNote'),
     seed: $('seed'), seedRnd: $('seedRnd'), seedHelp: $('seedHelp')
   };
 
@@ -198,7 +206,8 @@
   const CFG = {
     watermarkOpacity: [0.01, 0.02],
     shapeAlpha:       [0.006, 0.012],
-    shapeSize:        [0.008, 0.018],
+    /* AUMENTADO sutilmente (antes 0.008–0.018) */
+    shapeSize:        [0.012, 0.026],
     borderWidth:      [0.004, 0.007],
     borderAlpha:      0.20,
     stripeAlpha:      [0.006, 0.014],
@@ -221,6 +230,11 @@
         ? 'Este navegador no soporta el formato seleccionado ni su alternativa.'
         : `Este navegador no soporta el formato seleccionado. Se usará ${alt}.`;
     }
+    // ayuda para "ambos formatos"
+    const msg = [];
+    if (!mp4Ok) msg.push('MP4 no soportado aquí');
+    if (!webmOk) msg.push('WebM no soportado aquí');
+    els.bothNote.textContent = msg.length ? ('Nota: ' + msg.join(' · ')) : 'Se generarán ambos si están soportados.';
   }
   function getBestMime(selected){
     if (isSupported(selected)) return { mime:selected, fallback:false, to:null };
@@ -366,7 +380,6 @@
         const seedStr = (els.seed.value||'').trim() || state.previewSeed;
         const R = makeRandomizers(seedStr);
 
-        // Coincidir coordenadas con el tamaño visible
         drawGuideOverlay(octx, cw, ch, R);
 
         wrap.appendChild(oc);
@@ -485,14 +498,14 @@
     const wasInspectOn = els.optInspect.checked;
     if (wasInspectOn) { els.optInspect.checked = false; renderPreview(); }
 
-    const seedStr = (els.seed.value||'').trim();
-    const R = makeRandomizers(seedStr);
+    const seedUI = (els.seed.value||'').trim();
+    const seedBase = seedUI || genReadableSeed();
 
     state.abort = false;
     els.cancelBtn.disabled = false;
 
     let count = clamp(parseInt($('count').value||'1',10),1,10);
-    if (state.kind==='video') count = 1; // sólo 1 video
+    if (state.kind==='video') count = 1; // sólo 1 variación por video (pero puede salir MP4+WebM)
     const base = sanitizeName($('zipname').value);
     setProgress(0); $('downloadBtn').disabled=true;
 
@@ -500,6 +513,7 @@
       const zip = new JSZip();
 
       if (state.kind === 'image'){
+        const R = makeRandomizers(seedBase);
         const img = await blobToImage(state.file);
         const baseHue = state.baseHue ?? await estimateHueFromImageURL(state.objectURL);
         for (let i=1;i<=count;i++){
@@ -512,46 +526,76 @@
           setProgress(i*(100/count));
         }
       } else {
+        // ---- VIDEO
         const info = await loadVideoMeta(state.objectURL);
         const baseHue = state.baseHue ?? await estimateHueFromVideoURL(state.objectURL);
 
-        const sel = els.format.value;
-        const best = getBestMime(sel);
-        if (!best.mime) throw new Error('Ningún formato de video es soportado por este navegador.');
-        if (best.fallback) {
-          els.formatNote.textContent = sel.includes('mp4')
-            ? 'MP4 no soportado. Se exportará WebM.'
-            : 'WebM no soportado. Se exportará MP4.';
+        // Si "ambos formatos" está activo, preparamos dos salidas con semillas derivadas distintas
+        const wantBoth = els.bothFormats.checked;
+        const targets = [];
+
+        const mp4Mime = 'video/mp4;codecs=h264';
+        const webmMime = isSupported('video/webm;codecs=vp9') ? 'video/webm;codecs=vp9'
+                        : isSupported('video/webm;codecs=vp8') ? 'video/webm;codecs=vp8'
+                        : (isSupported('video/webm') ? 'video/webm' : '');
+
+        if (wantBoth) {
+          if (isSupported(mp4Mime)) targets.push({label:'mp4', mime:mp4Mime, seedSuffix:'|mp4'});
+          if (webmMime)            targets.push({label:'webm', mime:webmMime, seedSuffix:'|webm'});
+          if (!targets.length) throw new Error('Este navegador no puede exportar ni MP4 ni WebM.');
         } else {
-          updateFormatNote();
+          const sel = els.format.value;
+          const best = getBestMime(sel);
+          if (!best.mime) throw new Error('Ningún formato de video es soportado por este navegador.');
+          const label = best.mime.includes('mp4') ? 'mp4' : 'webm';
+          targets.push({label, mime:best.mime, seedSuffix:''}); // una sola salida
+          if (best.fallback) els.formatNote.textContent = sel.includes('mp4') ? 'MP4 no soportado. Se exportará WebM.' : 'WebM no soportado. Se exportará MP4.';
+          else updateFormatNote();
         }
 
-        const recCfg = {
-          full: $('durFull').checked,
-          maxSeconds: parseInt($('sec').value||'12',10),
-          mime: best.mime,
-          bps: 8_000_000,
-          borderColor: borderColorFor(1, baseHue, R)
-        };
-        const blob = await renderVideoVariation(state.objectURL,{
-          border: els.optBorder.checked, borderMulti: els.optBorderMulti.checked,
-          shapes: els.optShapes.checked, stripes: els.optStripes.checked, centerWM: els.optCenterWM.checked,
-          mirror: state.mirror
-        }, { width:info.width, height:info.height }, recCfg, R);
-        if (!state.abort){
-          const ext = (blob && blob.type && blob.type.includes('mp4')) ? 'mp4' : 'webm';
+        // Exportar cada objetivo con distinta singularidad usando semillas derivadas
+        for (let idx=0; idx<targets.length; idx++){
+          const t = targets[idx];
+          const seed = seedBase + t.seedSuffix;   // <- distinta singularidad por formato
+          const Rf = makeRandomizers(seed);
+
+          const recCfg = {
+            full: $('durFull').checked,
+            maxSeconds: parseInt($('sec').value||'12',10),
+            mime: t.mime,
+            bps: 8_000_000,
+            borderColor: borderColorFor(1, baseHue, Rf),
+            onProgress: p => {
+              if (targets.length===1) setProgress(p);
+              else {
+                const basePct = (idx/targets.length)*100;
+                const spanPct = (1/targets.length)*100;
+                setProgress(basePct + p*(spanPct/100));
+              }
+            }
+          };
+
+          const blob = await renderVideoVariation(state.objectURL,{
+            border: els.optBorder.checked, borderMulti: els.optBorderMulti.checked,
+            shapes: els.optShapes.checked, stripes: els.optStripes.checked, centerWM: els.optCenterWM.checked,
+            mirror: state.mirror
+          }, { width:info.width, height:info.height }, recCfg, Rf);
+
+          if (state.abort) break;
+
+          const ext = t.label; // 'mp4' o 'webm'
           zip.file(`${base}_video_1.${ext}`, blob, {binary:true});
-          setProgress(100);
         }
+        if (!state.abort) setProgress(100);
       }
 
       // MANIFIESTO
       if (!state.abort){
         zip.file('manifest.json', JSON.stringify({
           app: "Editor de Singularidad para ADS",
-          version: "v19",
+          version: "v20",
           kind: state.kind,
-          seed: seedStr || null,
+          seed: seedUI || null,
           mirror: state.mirror,
           options: {
             border: els.optBorder.checked,
@@ -559,7 +603,8 @@
             shapes: els.optShapes.checked,
             stripes: els.optStripes.checked,
             centerWM: els.optCenterWM.checked,
-            inspect: wasInspectOn // estado antes de exportar (no exporta guías)
+            inspect: els.optInspect.checked,
+            bothFormats: state.kind==='video' ? els.bothFormats.checked : false
           },
           video: (state.kind==='video') ? {
             durationMode: els.durFull.checked ? 'full' : 'clip',
@@ -639,7 +684,8 @@
     ctx.restore();
   }
   function paintTinyShapes(ctx,w,h,R){
-    const minSide=Math.min(w,h), n=R.rndInt(2,4);
+    /* AUMENTAMOS cantidad mínima y máxima un poco (antes 2–4) */
+    const minSide=Math.min(w,h), n=R.rndInt(3,5);
     for (let i=0;i<n;i++){
       ctx.save();
       const s=minSide*R.randRange(CFG.shapeSize);
@@ -695,7 +741,7 @@
     ctx.restore();
   }
   function paintTinyShapesGuide(ctx,w,h,R){
-    const minSide=Math.min(w,h), n=R.rndInt(2,4);
+    const minSide=Math.min(w,h), n=R.rndInt(3,5); /* guía acompasa export */
     for (let i=0;i<n;i++){
       ctx.save();
       const s=minSide*R.randRange(CFG.shapeSize);
@@ -787,12 +833,13 @@
         drawBase();
         drawOverlays();
         const t = recCfg.full ? v.currentTime : Math.min(v.currentTime, target);
-        setProgress(Math.min(100, (t/target)*100));
+        const pct = Math.min(100, (t/target)*100);
+        if (recCfg && typeof recCfg.onProgress === 'function') recCfg.onProgress(pct); else setProgress(pct);
         if (!recCfg.full && t >= target - 0.03){ v.pause(); rec.stop(); return; }
         raf=requestAnimationFrame(loop);
       })();
 
-      v.onended=()=>{ if (rec.state!=='inactive'){ drawBase(); drawOverlays(); setProgress(100); rec.stop(); } };
+      v.onended=()=>{ if (rec.state!=='inactive'){ drawBase(); drawOverlays(); if (recCfg && typeof recCfg.onProgress === 'function') recCfg.onProgress(100); else setProgress(100); rec.stop(); } };
     });
   }
 
