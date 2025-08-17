@@ -46,7 +46,16 @@ body::before{
 .header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
 h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;text-align:center}
 .sub{color:var(--muted);font-size:14.5px;text-align:center}
-.desc{margin-top:8px;color:#bcd0f2;font-size:13.5px;text-align:center}
+.brand{
+  margin-top:8px;
+  font-size:12.5px;
+  color:#cfe3ff;
+  background:linear-gradient(90deg, rgba(124,242,255,.18), rgba(102,163,255,.18));
+  border:1px solid rgba(124,242,255,.3);
+  padding:6px 10px;
+  border-radius:999px;
+}
+.brand b{color:#ffffff}
 
 /* ===== Layout ancho ===== */
 .grid{display:grid;grid-template-columns:1.25fr .95fr;gap:28px;margin-top:16px}
@@ -72,7 +81,8 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;
 /* ===== Vista previa ===== */
 .preview{
   position:relative; border-radius:16px; background:linear-gradient(180deg,#0b1426,#0a1224);
-  padding:16px; min-height:420px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+  padding:16px; min-height:420px; display:flex; align-items:flex-start; justify-content:center; 
+  overflow:auto; /* ← para poder desplazarse cuando haces zoom */
   border:1px solid rgba(102,163,255,.18); box-shadow:0 10px 40px rgba(0,0,0,.35);
 }
 .preview::before{
@@ -112,11 +122,16 @@ textarea{min-height:110px;width:100%}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #223a6b;padding:6px 10px;border-radius:999px;font-size:12.5px}
 .hr{height:1px;background:#1c2c55;margin:8px 0 2px}
 
-/* Jobs */
-.jobs{margin-top:10px;display:flex;flex-direction:column;gap:10px}
-.job{background:#0b162e;border:1px solid #21345e;border-radius:12px;padding:10px 12px}
-.job .title{font-size:12.5px;color:#cfe0ff;margin-bottom:6px}
-.job .progress{margin-top:6px}
+/* Zoom UI */
+.zoombox{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;
+  background:linear-gradient(180deg,var(--card),var(--card2));
+  border:1px solid var(--stroke2); padding:10px 12px; border-radius:12px;
+}
+.zoomval{min-width:42px;text-align:right;color:#cfe0ff}
+.range{appearance:none;width:200px;height:6px;border-radius:999px;background:#132347;outline:none}
+.range::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#6ea5ff;border:1px solid #2e6fe0}
+.range::-moz-range-thumb{width:16px;height:16px;border:none;border-radius:50%;background:#6ea5ff}
 </style>
 </head>
 <body>
@@ -124,6 +139,7 @@ textarea{min-height:110px;width:100%}
   <div class="header">
     <h1>Editor de Singularidad para ADS</h1>
     <div class="sub">Variaciones <b>invisibles</b> + A/B sutil. PNG y MP4/WebM en tu navegador.</div>
+    <div class="brand">Creador: <b>Manu.EmprendeHoy</b> &amp; <b>DropDrop</b></div>
     <div class="desc">Propósito: reducir la repetición entre anuncios (no evadir revisiones).</div>
   </div>
 
@@ -148,6 +164,16 @@ textarea{min-height:110px;width:100%}
       <div class="toolbar">
         <button id="mirrorBtn" class="btn" disabled type="button">Espejo ↔</button>
         <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
+      </div>
+
+      <!-- ZOOM PREVIEW -->
+      <div class="zoombox">
+        <b>Zoom preview</b>
+        <button id="zoomOut" class="btn" type="button">−</button>
+        <input id="zoomRange" class="range" type="range" min="50" max="200" value="100"/>
+        <button id="zoomIn" class="btn" type="button">+</button>
+        <button id="zoomReset" class="btn" type="button" title="100%">Reset</button>
+        <span id="zoomVal" class="zoomval">100%</span>
       </div>
 
       <!-- Descarga -->
@@ -391,12 +417,13 @@ const els={
   subsAuto:$('subsAuto'),subsDur:$('subsDur'),subsSize:$('subsSize'),subsBg:$('subsBg'),
   formatNote:$('formatNote'),bothNote:$('bothNote'),
   preset:$('preset'),applyPreset:$('applyPreset'),
-  imgFmt:$('imgFmt'),imgQ:$('imgQ')
+  imgFmt:$('imgFmt'),imgQ:$('imgQ'),
+  zoomRange:$('zoomRange'),zoomOut:$('zoomOut'),zoomIn:$('zoomIn'),zoomReset:$('zoomReset'),zoomVal:$('zoomVal')
 };
 
 const MAX_VIDEO=15*1024*1024;
 const state={file:null,kind:null,url:null,logo:null,mirror:false,abort:false,previewSeed:null,
-             pv:{controller:null,cleanup:()=>{}},subs:[]};
+             pv:{controller:null,cleanup:()=>{}},subs:[], zoom:1};
 
 /* ===================== helpers ===================== */
 const throttle=(fn,ms)=>{let t=0;return(...a)=>{const n=performance.now();if(n-t>=ms){t=n;fn(...a);}}};
@@ -405,11 +432,12 @@ function setProgress(p){ els.bar.style.width=Math.max(0,Math.min(100,p))+'%'; }
 function clearAll(){
   if(state.url) URL.revokeObjectURL(state.url);
   if(state.pv.controller) state.pv.controller.destroy();
-  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,previewSeed:null,subs:[],pv:{controller:null,cleanup:()=>{}}});
+  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,previewSeed:null,subs:[],pv:{controller:null,cleanup:()=>{}},zoom:1});
   els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>';
   els.mirrorBtn.textContent='Espejo ↔'; els.fileInfo.classList.add('hidden'); els.drop.classList.remove('hidden');
   els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; setEnabled(false);
   els.jobs.innerHTML=''; setProgress(0);
+  updateZoomUI();
 }
 
 /* ===================== Drop/File ===================== */
@@ -432,7 +460,6 @@ els.subsLoad.addEventListener('click',()=>els.subsFile.click());
 els.subsFile.addEventListener('change',async e=>{ const f=e.target.files?.[0]; if(!f)return; const txt=await f.text(); state.subs=parseSubs(txt); renderPreview(); });
 els.subsPaste.addEventListener('click',()=>els.subsText.classList.toggle('hidden'));
 els.subsText.addEventListener('input',()=>{ if(els.subsAuto.checked) state.subs=autoFromText(els.subsText.value, parseInt(els.subsDur.value||'2',10)); else state.subs=parseSubs(els.subsText.value); renderPreview(); });
-els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value=''; renderPreview(); });
 
 /* ===================== Preview triggers ===================== */
 [
@@ -448,6 +475,26 @@ els.seed.addEventListener('input', renderPreview);
 els.mirrorBtn.addEventListener('click',()=>{ if(!state.file) return; state.mirror=!state.mirror; els.mirrorBtn.textContent=state.mirror?'Espejo ACTIVADO ↔':'Espejo ↔'; renderPreview(); });
 els.clearBtn.addEventListener('click',clearAll);
 
+/* ===================== ZOOM ===================== */
+function updateZoomUI(){
+  const pct = Math.round(state.zoom*100);
+  els.zoomRange.value = String(pct);
+  els.zoomVal.textContent = pct+'%';
+  const node = els.preview.firstElementChild;
+  if(node){
+    node.style.transformOrigin='top center';
+    node.style.transform=`scale(${state.zoom})`;
+    node.style.display='inline-block';
+  }
+}
+els.zoomRange.addEventListener('input',()=>{
+  state.zoom = Math.max(0.5, Math.min(2, (+els.zoomRange.value)/100));
+  updateZoomUI();
+});
+els.zoomOut.addEventListener('click',()=>{ state.zoom=Math.max(0.5, +(state.zoom-0.1).toFixed(2)); updateZoomUI(); });
+els.zoomIn.addEventListener('click',()=>{ state.zoom=Math.min(2, +(state.zoom+0.1).toFixed(2)); updateZoomUI(); });
+els.zoomReset.addEventListener('click',()=>{ state.zoom=1; updateZoomUI(); });
+
 /* ===================== Preset plataforma ===================== */
 const PRESETS = {
   'ig-11' : { ar:'1:1',  letterbox:true,  keepRes:false, hq:true,  format:'both' },
@@ -460,7 +507,6 @@ const PRESETS = {
   'li-11' : { ar:'1:1',  letterbox:true,  keepRes:false, hq:true,  format:'both' }
 };
 function setARUI(ratioTag){
-  // Desmarca todo excepto lo seleccionado
   els.arOrig.checked = false;
   els.ar11.checked   = (ratioTag==='1:1');
   els.ar45.checked   = (ratioTag==='4:5');
@@ -475,9 +521,11 @@ function applyPresetKey(key){
   els.keepRes.checked   = !!p.keepRes;
   els.hqQuality.checked = !!p.hq;
   els.format.value      = p.format || 'both';
-  // Para imágenes: por defecto PNG alta calidad
-  els.imgFmt.value = 'png';
-  els.imgQ.value   = 95;
+  els.imgFmt.value = 'png'; els.imgQ.value = 95;
+  // Si el nombre del zip está en su valor por defecto, lo renombramos con el preset
+  if((els.zipname.value||'').trim().toLowerCase()==='variaciones_ads'){
+    els.zipname.value = `variaciones_${key}`;
+  }
   updateFormatNote();
   renderPreview();
 }
@@ -499,7 +547,7 @@ async function handleMain(file){
   if(state.kind==='video'){ els.count.value=1; els.count.disabled=true; els.countHelp.style.display='block'; els.videoOpts.style.display='flex'; }
   else { els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; }
 
-  renderPreview(); updateFormatNote();
+  renderPreview(); updateFormatNote(); updateZoomUI();
 }
 
 /* ===================== Load image robusto ===================== */
@@ -783,6 +831,7 @@ async function renderPreview(){
     }catch{
       els.preview.innerHTML='<div class="help">No se pudo dibujar la imagen.</div>';
     }
+    updateZoomUI();
     return;
   }
 
@@ -810,6 +859,7 @@ async function renderPreview(){
     subsSize: +els.subsSize.value||24,
     subsBg: !!els.subsBg.checked
   });
+  updateZoomUI();
 }
 
 /* ===================== Exportar ===================== */
@@ -868,7 +918,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS — Pro',
-        version:'v41-presets-imgfmt',
+        version:'v42-zoom-brand',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
