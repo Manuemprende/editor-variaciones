@@ -1,55 +1,54 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Editor de Singularidad para ADS</title>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-  <style>
-    :root{--bg1:#0a0f1a;--bg2:#0b1320;--card:#0e1626;--stroke:#1c2740;--fg:#e9f0ff;--muted:#a9b8d6;--primary:#3b82f6}
-    *{box-sizing:border-box}
-    body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
-      background:radial-gradient(1200px 800px at 15% 10%,rgba(59,130,246,.08),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2));
-      min-height:100vh;display:flex;align-items:center;justify-content:center;padding:34px;-webkit-font-smoothing:antialiased}
-    .app{width:100%;max-width:1120px;background:var(--card);border:1px solid var(--stroke);border-radius:20px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-    .header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
-    h1{margin:0;font-size:28px;font-weight:800;letter-spacing:.1px;text-align:center}
-    .sub{color:var(--muted);font-size:14px;text-align:center}
-    .desc{margin-top:8px;color:#b8c6e8;font-size:13.5px;text-align:center}
-    .grid{display:grid;grid-template-columns:1.12fr .88fr;gap:24px;margin-top:12px}
-    @media (max-width:980px){.grid{grid-template-columns:1fr}}
-    .drop,.drop-mini{border:2px dashed var(--stroke);border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;background:#0a1324;cursor:pointer;transition:.15s}
-    .drop{min-height:200px;padding:22px;margin-bottom:12px}.drop-mini{min-height:84px;padding:12px}
-    .drop:hover,.drop-mini:hover{border-color:#2a3a64}.drop.dragover,.drop-mini.dragover{border-color:var(--primary)}
-    .hidden{display:none!important}.visually-hidden{position:absolute!important;width:1px;height:1px;clip-path:inset(50%)}
-    .preview{position:relative;border:1px solid var(--stroke);border-radius:12px;background:#0b1426;padding:18px;min-height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    video,canvas{max-width:100%;max-height:520px;border-radius:10px;image-rendering:crisp-edges}
-    .overlay{position:absolute;inset:0;pointer-events:none}
-    .field{background:#0b162e;border:1px solid #21345e;padding:14px 12px;border-radius:12px;color:var(--fg);display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
-    .btn{appearance:none;border:1px solid #203055;background:#101a32;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px}
-    .btn:hover{border-color:#2a3b6b;background:#0e1830}.btn.primaria{background:var(--primary);border-color:#2e6fe0;color:#0b1220}
-    .help{font-size:12.5px;color:#a9b8d6}.filename{font-size:12.5px;color:#9fb7ff}
-    .progress{height:10px;background:#0a1428;border:1px solid #1c2f55;border-radius:999px;overflow:hidden;margin-top:12px}
-    .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#67a5ff);transition:width .2s}
-    .toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Editor de Singularidad para ADS</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+:root{--bg1:#0a0f1a;--bg2:#0b1320;--card:#0e1626;--stroke:#1c2740;--fg:#e9f0ff;--muted:#a9b8d6;--primary:#3b82f6}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
+background:radial-gradient(1200px 800px at 15% 10%,rgba(59,130,246,.08),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2));
+min-height:100vh;display:flex;align-items:center;justify-content:center;padding:34px;-webkit-font-smoothing:antialiased}
+.app{width:100%;max-width:1120px;background:var(--card);border:1px solid var(--stroke);border-radius:20px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
+.header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
+h1{margin:0;font-size:28px;font-weight:800;letter-spacing:.1px;text-align:center}
+.sub{color:var(--muted);font-size:14px;text-align:center}
+.desc{margin-top:8px;color:#b8c6e8;font-size:13.5px;text-align:center}
+.grid{display:grid;grid-template-columns:1.12fr .88fr;gap:24px;margin-top:12px}
+@media (max-width:980px){.grid{grid-template-columns:1fr}}
+.drop,.drop-mini{border:2px dashed var(--stroke);border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;background:#0a1324;cursor:pointer;transition:.15s}
+.drop{min-height:200px;padding:22px;margin-bottom:12px}.drop-mini{min-height:84px;padding:12px}
+.drop:hover,.drop-mini:hover{border-color:#2a3a64}.drop.dragover,.drop-mini.dragover{border-color:var(--primary)}
+.hidden{display:none!important}.visually-hidden{position:absolute!important;width:1px;height:1px;clip-path:inset(50%)}
+.preview{position:relative;border:1px solid var(--stroke);border-radius:12px;background:#0b1426;padding:18px;min-height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+video,canvas{max-width:100%;max-height:520px;border-radius:10px;image-rendering:crisp-edges}
+.overlay{position:absolute;inset:0;pointer-events:none}
+.field{background:#0b162e;border:1px solid #21345e;padding:14px 12px;border-radius:12px;color:var(--fg);display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
+.btn{appearance:none;border:1px solid #203055;background:#101a32;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px}
+.btn:hover{border-color:#2a3b6b;background:#0e1830}.btn.primaria{background:var(--primary);border-color:#2e6fe0;color:#0b1220}
+.help{font-size:12.5px;color:#a9b8d6}.filename{font-size:12.5px;color:#9fb7ff}
+.progress{height:10px;background:#0a1428;border:1px solid #1c2f55;border-radius:999px;overflow:hidden;margin-top:12px}
+.bar{height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#67a5ff);transition:width .2s}
+.toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 
-    /* Bloque de descarga a la izquierda */
-    .left-download{display:flex;flex-direction:column;gap:12px;margin-top:18px;margin-bottom:10px}
-    .left-download .actions{display:flex;gap:12px;flex-wrap:wrap}
-    .left-download .jobs{max-height:220px;overflow:auto;padding-right:4px}
+/* Descarga en la columna izquierda */
+.left-download{margin-top:18px;margin-bottom:10px}
+.left-actions{margin-top:14px;display:flex;gap:12px;flex-wrap:wrap}
 
-    input[type="text"],input[type="number"],select,textarea{background:#0b162e;border:1px solid #21345e;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none}
-    textarea{min-height:110px;width:100%}
-    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.chips{display:flex;gap:8px;flex-wrap:wrap}
-    .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #21345e;padding:6px 10px;border-radius:999px;font-size:12.5px}
-    .hr{height:1px;background:#182b52;margin:8px 0 2px}
+input[type="text"],input[type="number"],select,textarea{background:#0b162e;border:1px solid #21345e;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none}
+textarea{min-height:110px;width:100%}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #21345e;padding:6px 10px;border-radius:999px;font-size:12.5px}
+.hr{height:1px;background:#182b52;margin:8px 0 2px}
 
-    /* Job list (progreso por video) */
-    .jobs{margin-top:10px;display:flex;flex-direction:column;gap:10px}
-    .job{background:#0b162e;border:1px solid #21345e;border-radius:12px;padding:10px 12px}
-    .job .title{font-size:12.5px;color:#cfe0ff;margin-bottom:6px}
-    .job .progress{margin-top:6px}
-  </style>
+/* Job list (progreso por video) */
+.jobs{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.job{background:#0b162e;border:1px solid #21345e;border-radius:12px;padding:10px 12px}
+.job .title{font-size:12.5px;color:#cfe0ff;margin-bottom:6px}
+.job .progress{margin-top:6px}
+</style>
 </head>
 <body>
 <div class="app" id="app">
@@ -82,18 +81,18 @@
         <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
       </div>
 
-      <!-- IZQUIERDA: barras + acciones -->
+      <!-- IZQUIERDA: progreso y acciones -->
       <div class="left-download">
         <!-- progreso general -->
         <div class="progress"><div id="bar" class="bar"></div></div>
         <!-- progreso por job -->
         <div id="jobs" class="jobs"></div>
         <!-- acciones -->
-        <div class="actions">
+        <div class="left-actions">
           <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
           <button id="cancelBtn" class="btn" type="button" disabled>Cancelar</button>
         </div>
-        <div class="help">Salida imágenes: PNG. Vídeo: MP4 y WebM (si el navegador soporta MP4). Todo 100% en tu navegador.</div>
+        <div class="help" style="margin-top:6px">Salida imágenes: PNG. Vídeo: MP4 y/o WebM (según tu selección y soporte del navegador). Todo 100% en tu navegador.</div>
       </div>
     </div>
 
@@ -140,8 +139,11 @@
 
         <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:12px">
           <b>Formato</b>
-          <select id="format" disabled>
-            <option>Siempre MP4 + WebM</option>
+          <select id="format">
+            <option value="both" selected>MP4 + WebM</option>
+            <option value="mp4">Solo MP4</option>
+            <option value="webm">Solo WebM</option>
+            <option value="auto">Auto (mejor soporte)</option>
           </select>
           <label class="row"><b>Videos por formato</b>
             <input id="vidCount" type="number" min="1" max="3" value="2" style="width:64px;text-align:center"/>
@@ -151,7 +153,7 @@
           <label class="row"><input id="keepRes" type="checkbox" checked/> Mantener resolución original</label>
         </div>
         <span id="formatNote" class="help"></span>
-        <span id="bothNote" class="help">Siempre intentamos exportar MP4 y WebM (si MP4 no está soportado se exporta WebM).</span>
+        <span id="bothNote" class="help">El resultado depende de tu selección y del soporte del navegador.</span>
       </div>
 
       <!-- INVISIBLES -->
@@ -218,8 +220,7 @@
 
       <!-- SUBTÍTULOS -->
       <div class="field" style="flex-direction:column;align-items:flex-start">
-        <div class="row" style="justify-content:space-between;width:100%">
-          <b>Subtítulos</b>
+        <div class="row" style="justify-content:space-between;width:100%"><b>Subtítulos</b>
           <label class="row"><input id="subsEnable" type="checkbox"/> Agregar subtítulos</label>
         </div>
         <div id="subsBox" class="hidden" style="width:100%">
@@ -315,9 +316,9 @@ els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value='
 [
  'abEnable','abPreview','abIntensity','arOrig','ar11','ar45','ar916','ar169','abExtra','abExtraRandom',
  'optBorder','optBorderMulti','optShapes','optStripes','optCenterWM','optInspect',
- 'durFull','durClip','sec','randStart','segments',
+ 'durFull','durClip','sec','randStart','segments','format',
  'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes'
-].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.('change',renderPreview); });
+].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.('change',()=>{ renderPreview(); updateFormatNote(); }); });
 
 els.seedRnd.addEventListener('click',()=>{ els.seed.value=genSeed(); renderPreview(); });
 els.mirrorBtn.addEventListener('click',()=>{ if(!state.file) return; state.mirror=!state.mirror; els.mirrorBtn.textContent=state.mirror?'Espejo ACTIVADO ↔':'Espejo ↔'; renderPreview(); });
@@ -367,80 +368,60 @@ async function loadBitmap(file){
 const getW = img => img._w || img.naturalWidth || img.width;
 const getH = img => img._h || img.naturalHeight || img.height;
 
-/* ---------- anti-flicker overlay ---------- */
+/* ---------- anti-flicker overlay con valores MÁS invisibles ---------- */
 function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
   const R = makeRNG(seed || 'ov');
   const allowStripes = !!options.allowStripes && !els.noFlicker?.checked;
 
-  // 1) Borde simple
+  // 1) Borde simple (opacidad reducida)
   if (els.optBorder.checked) {
-    const size = Math.max(1, Math.round(Math.min(w, h) * (0.003 + 0.0025)));
-    ctx.save(); ctx.lineWidth = size; ctx.strokeStyle = 'rgba(255,255,255,0.14)';
+    const size = Math.max(1, Math.round(Math.min(w, h) * 0.003));
+    ctx.save(); ctx.lineWidth = size; ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.strokeRect(size/2, size/2, w-size, h-size); ctx.restore();
   }
 
-  // 2) Borde multicolor sutil → franjas aleatorias por orilla (estático, sin flicker)
+  // 2) Borde multicolor (más tenue)
   if (els.optBorderMulti.checked && !els.noFlicker?.checked) {
-    const s = Math.max(1, Math.round(Math.min(w, h) * 0.0055));
+    const s = Math.max(1, Math.round(Math.min(w, h) * 0.004));
     const base = R() * 360;
-    const baseAlpha = 0.10 + R() * 0.06;
-
+    const baseAlpha = 0.035 + R() * 0.04; // 0.035–0.075
     const drawEdgeStripes = (edge) => {
-      const n = R.int(1, 3);
+      const n = R.int(1, 2);
       for (let k = 0; k < n; k++) {
-        const hue = (base + (R() * 60 - 30) + k * (20 + R() * 20)) % 360;
-        const sat = 60 + R() * 25;
-        const lig = 55 + R() * 15;
-        const alpha = baseAlpha * (0.9 + R() * 0.4);
-        const t = s * (0.7 + R() * 1.1);
-        const inset = Math.round(R() * Math.min(w, h) * 0.015);
-
-        const dashA = Math.round(10 + R() * 20);
-        const dashB = Math.round(6 + R() * 14);
-        ctx.setLineDash(R() < 0.55 ? [dashA, dashB] : []);
-
+        const hue = (base + (R() * 50 - 25) + k * (18 + R() * 18)) % 360;
+        const sat = 55 + R() * 20;
+        const lig = 60 + R() * 10;
+        const alpha = baseAlpha * (0.9 + R() * 0.3);
+        const t = s * (0.7 + R() * 0.9);
+        const inset = Math.round(R() * Math.min(w, h) * 0.012);
+        const dashA = Math.round(10 + R() * 18);
+        const dashB = Math.round(6 + R() * 12);
+        ctx.setLineDash(R() < 0.45 ? [dashA, dashB] : []);
         ctx.strokeStyle = `hsla(${hue},${sat}%,${lig}%,${alpha})`;
         ctx.lineWidth = Math.max(1, t);
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-
+        ctx.lineCap = 'round'; ctx.lineJoin = 'round';
         ctx.beginPath();
         switch (edge) {
-          case 'top':
-            ctx.moveTo(t / 2, inset + t / 2);
-            ctx.lineTo(w - t / 2, inset + t / 2);
-            break;
-          case 'bottom':
-            ctx.moveTo(t / 2, h - (inset + t / 2));
-            ctx.lineTo(w - t / 2, h - (inset + t / 2));
-            break;
-          case 'left':
-            ctx.moveTo(inset + t / 2, t / 2);
-            ctx.lineTo(inset + t / 2, h - t / 2);
-            break;
-          case 'right':
-            ctx.moveTo(w - (inset + t / 2), t / 2);
-            ctx.lineTo(w - (inset + t / 2), h - t / 2);
-            break;
+          case 'top':    ctx.moveTo(t/2, inset + t/2);            ctx.lineTo(w - t/2, inset + t/2); break;
+          case 'bottom': ctx.moveTo(t/2, h - (inset + t/2));      ctx.lineTo(w - t/2, h - (inset + t/2)); break;
+          case 'left':   ctx.moveTo(inset + t/2, t/2);            ctx.lineTo(inset + t/2, h - t/2); break;
+          case 'right':  ctx.moveTo(w - (inset + t/2), t/2);      ctx.lineTo(w - (inset + t/2), h - t/2); break;
         }
         ctx.stroke();
-        ctx.setLineDash([]); // limpiar
+        ctx.setLineDash([]);
       }
     };
-
-    ctx.save();
-    ['top', 'right', 'bottom', 'left'].forEach(drawEdgeStripes);
-    ctx.restore();
+    ctx.save(); ['top','right','bottom','left'].forEach(drawEdgeStripes); ctx.restore();
   }
 
-  // 3) Figuras
+  // 3) Figuras (opacidad reducida)
   if (els.optShapes.checked) {
-    const n = 3 + Math.floor(R()*3);
+    const n = 2 + Math.floor(R()*2);
     for (let i=0;i<n;i++){
-      const s=Math.min(w,h)*(0.012+R()*0.014);
+      const s=Math.min(w,h)*(0.01+R()*0.012);
       const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s;
-      ctx.save(); ctx.globalAlpha=0.003+R()*0.004; ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
-      ctx.fillStyle='hsl('+Math.floor(R()*360)+',60%,65%)';
+      ctx.save(); ctx.globalAlpha=0.0015+R()*0.0012; ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
+      ctx.fillStyle='hsl('+Math.floor(R()*360)+',55%,60%)';
       const t=R();
       if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); }
       else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); }
@@ -449,24 +430,24 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
     }
   }
 
-  // 4) Franjas suaves
+  // 4) Franjas (más invisibles)
   if (els.optStripes.checked && allowStripes) {
     const R2=makeRNG(seed+'|st');
     const a=(R2()*60-30)*Math.PI/180;
-    const sw=Math.max(0.5,Math.min(w,h)*(0.004+R2()*0.005));
-    const gap=Math.max(1,sw*(3.5+R2()*2));
+    const sw=Math.max(0.5,Math.min(w,h)*(0.003+R2()*0.0035));
+    const gap=Math.max(1,sw*(4+R2()*2.2));
     const len=Math.sqrt(w*w+h*h)+sw*2;
-    ctx.save(); ctx.translate(w/2,h/2); ctx.rotate(a); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle='rgba(255,255,255,0.009)';
+    ctx.save(); ctx.translate(w/2,h/2); ctx.rotate(a); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle='rgba(255,255,255,0.004)';
     for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2);
     ctx.restore();
   }
 
-  // 5) Marca de agua centrada
+  // 5) Marca de agua centrada (más sutil)
   if (els.optCenterWM.checked && state.logo) {
-    const m=Math.min(w,h)*0.28;
+    const m=Math.min(w,h)*0.26;
     const r=Math.min(m/Math.max(state.logo.width,state.logo.height),1);
     const lw=state.logo.width*r, lh=state.logo.height*r;
-    ctx.save(); ctx.globalAlpha=0.006+Math.random()*0.002;
+    ctx.save(); ctx.globalAlpha=0.0025+Math.random()*0.0012;
     ctx.drawImage(state.logo,Math.round((w-lw)/2),Math.round((h-lh)/2),Math.round(lw),Math.round(lh));
     ctx.restore();
   }
@@ -620,7 +601,7 @@ async function doExport(){
       job.done();
     }else{
       const info=await videoMeta(state.url);
-      const targets=getTargetsBoth(); // MP4 + WebM si es posible
+      const targets=getTargetsFromUI(); // según selección
       const count=Math.max(1,Math.min(3,parseInt(els.vidCount.value||'1',10)));
       const plan=parseSegments(els.segments?.value||'', info.duration);
 
@@ -642,12 +623,13 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS',
-        version:'v33r-bordes-aleatorios',
+        version:'v34-format-select-invisible',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
         noCrop:!!els.noCrop?.checked,
         hq:!!els.hqQuality?.checked,
+        selected_format: els.format?.value || 'both',
         note_mp4_supported: MediaRecorder.isTypeSupported('video/mp4;codecs=h264')
       },null,2));
       const zipBlob=await zip.generateAsync({type:'blob'}); download(zipBlob,`${base}.zip`);
@@ -744,30 +726,27 @@ function createJob(title){
 function drawABExtra(ctx,w,h,R,logo){
   if (els?.noFlicker?.checked) return;
   let mode=els.abExtra.value; if(els.abExtraRandom.checked){ const opts=['vignette-soft','corner-shadows','rounded-soft','grain-light','tint-hue','dot-grid']; if(logo) opts.push('logo-corner'); mode=opts[Math.floor(R()*opts.length)]; }
-  if(mode==='vignette-soft'){ const g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.25,w/2,h/2,Math.max(w,h)*0.85); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.14)'); ctx.save(); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); ctx.restore(); }
-  else if(mode==='corner-shadows'){ const s=Math.min(w,h)*0.22; const draw=(x,y)=>{ const g=ctx.createRadialGradient(x,y,1,x,y,s); g.addColorStop(0,'rgba(0,0,0,0.14)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.save(); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,s,0,2*Math.PI); ctx.fill(); ctx.restore(); }; draw(0,0); draw(w,0); draw(0,h); draw(w,h); }
-  else if(mode==='rounded-soft'){ const pad=Math.round(Math.min(w,h)*0.02 + R()*Math.min(w,h)*0.01); const r=Math.round(Math.min(w,h)*(0.06+R()*0.05)); ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.22)'; ctx.lineWidth=Math.max(2,Math.round(Math.min(w,h)*0.008)); roundRect(ctx,pad,pad,w-2*pad,h-2*pad,r); ctx.stroke(); ctx.restore(); }
-  else if(mode==='grain-light'){ const nC=document.createElement('canvas'); nC.width=64;nC.height=64; const nctx=nC.getContext('2d'); const img=nctx.createImageData(64,64); for(let i=0;i<img.data.length;i+=4){ const g=128+Math.floor((R()-0.5)*26); img.data[i]=img.data[i+1]=img.data[i+2]=g; img.data[i+3]=7; } nctx.putImageData(img,0,0); const p=ctx.createPattern(nC,'repeat'); ctx.save(); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle=p; ctx.fillRect(0,0,w,h); ctx.restore(); }
-  else if(mode==='tint-hue'){ const hue=Math.floor(R()*360); const col=`hsla(${hue},16%,50%,0.06)`; ctx.save(); ctx.fillStyle=col; ctx.fillRect(0,0,w,h); ctx.restore(); }
-  else if(mode==='dot-grid'){ const step=Math.round(Math.min(w,h)*(0.04+R()*0.03)); ctx.save(); ctx.fillStyle='rgba(255,255,255,0.03)'; for(let y=step/2;y<h;y+=step) for(let x=step/2;x<w;x+=step) ctx.fillRect(x,y,1,1); ctx.restore(); }
-  else if(mode==='logo-corner' && logo){ const s=Math.min(w,h)*0.12; const r=Math.min(s/Math.max(logo.width,logo.height),1); const lw=Math.round(logo.width*r), lh=Math.round(logo.height*r); const pad=Math.round(Math.min(w,h)*0.02); const pos=['tl','tr','br','bl'][Math.floor(R()*4)]; let x=pad,y=pad; if(pos==='tr') x=w-pad-lw; if(pos==='br'){x=w-pad-lw;y=h-pad-lh;} if(pos==='bl') y=h-pad-lh; ctx.save(); ctx.globalAlpha=0.72; ctx.drawImage(logo,x,y,lw,lh); ctx.restore(); }
+  if(mode==='vignette-soft'){ const g=ctx.createRadialGradient(w/2,h/2,Math.min(w,h)*0.28,w/2,h/2,Math.max(w,h)*0.95); g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,0,0,0.08)'); ctx.save(); ctx.fillStyle=g; ctx.fillRect(0,0,w,h); ctx.restore(); }
+  else if(mode==='corner-shadows'){ const s=Math.min(w,h)*0.20; const draw=(x,y)=>{ const g=ctx.createRadialGradient(x,y,1,x,y,s); g.addColorStop(0,'rgba(0,0,0,0.10)'); g.addColorStop(1,'rgba(0,0,0,0)'); ctx.save(); ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,s,0,2*Math.PI); ctx.fill(); ctx.restore(); }; draw(0,0); draw(w,0); draw(0,h); draw(w,h); }
+  else if(mode==='rounded-soft'){ const pad=Math.round(Math.min(w,h)*0.015 + R()*Math.min(w,h)*0.008); const r=Math.round(Math.min(w,h)*(0.05+R()*0.04)); ctx.save(); ctx.strokeStyle='rgba(255,255,255,0.12)'; ctx.lineWidth=Math.max(2,Math.round(Math.min(w,h)*0.007)); roundRect(ctx,pad,pad,w-2*pad,h-2*pad,r); ctx.stroke(); ctx.restore(); }
+  else if(mode==='grain-light'){ const nC=document.createElement('canvas'); nC.width=64;nC.height=64; const nctx=nC.getContext('2d'); const img=nctx.createImageData(64,64); for(let i=0;i<img.data.length;i+=4){ const g=128+Math.floor((R()-0.5)*22); img.data[i]=img.data[i+1]=img.data[i+2]=g; img.data[i+3]=5; } nctx.putImageData(img,0,0); const p=ctx.createPattern(nC,'repeat'); ctx.save(); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle=p; ctx.fillRect(0,0,w,h); ctx.restore(); }
+  else if(mode==='tint-hue'){ const hue=Math.floor(R()*360); const col=`hsla(${hue},14%,50%,0.04)`; ctx.save(); ctx.fillStyle=col; ctx.fillRect(0,0,w,h); ctx.restore(); }
+  else if(mode==='dot-grid'){ const step=Math.round(Math.min(w,h)*(0.05+R()*0.02)); ctx.save(); ctx.fillStyle='rgba(255,255,255,0.02)'; for(let y=step/2;y<h;y+=step) for(let x=step/2;x<w;x+=step) ctx.fillRect(x,y,1,1); ctx.restore(); }
+  else if(mode==='logo-corner' && logo){ const s=Math.min(w,h)*0.12; const r=Math.min(s/Math.max(logo.width,logo.height),1); const lw=Math.round(logo.width*r), lh=Math.round(logo.height*r); const pad=Math.round(Math.min(w,h)*0.02); const pos=['tl','tr','br','bl'][Math.floor(R()*4)]; let x=pad,y=pad; if(pos==='tr') x=w-pad-lw; if(pos==='br'){x=w-pad-lw;y=h-pad-lh;} if(pos==='bl') y=h-pad-lh; ctx.save(); ctx.globalAlpha=0.55; ctx.drawImage(logo,x,y,lw,lh); ctx.restore(); }
 }
 function drawGuides(ctx,w,h,R){
   guideBorder(ctx,w,h);
   if(els.optBorderMulti.checked) guideBorderMulti(ctx,w,h,R);
   if(els.optShapes.checked) guideShapes(ctx,w,h,R);
   if(els.optStripes.checked) guideStripes(ctx,w,h,R);
-  if(els.optCenterWM.checked) guideWM(ctx,w,h); /* si no existe, drawGuidesSafe atrapa el error */
+  if(els.optCenterWM.checked) guideWM(ctx,w,h);
 }
 function guideBorder(ctx,w,h){ const s=Math.max(1,Math.round(Math.min(w,h)*0.006)); ctx.save(); ctx.lineWidth=s; ctx.strokeStyle='rgba(255,255,0,.65)'; ctx.setLineDash([8,6]); ctx.strokeRect(s/2,s/2,w-s,h-s); ctx.restore(); }
 
-/* Guía de borde multicolor aleatoria (preview) */
+/* Guía de borde multicolor (solo inspección) */
 function guideBorderMulti(ctx, w, h, R) {
   const s = Math.max(1, Math.round(Math.min(w, h) * 0.006));
-  ctx.save();
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-
+  ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
   const draw = (edge) => {
     const n = R.int(1, 3);
     for (let k = 0; k < n; k++) {
@@ -775,44 +754,28 @@ function guideBorderMulti(ctx, w, h, R) {
       const inset = Math.round(R() * Math.min(w, h) * 0.015);
       const dashA = Math.round(12 + R() * 18);
       const dashB = Math.round(8 + R() * 14);
-
       const hue = (R() * 360) | 0;
       ctx.strokeStyle = `hsla(${hue},100%,65%,.9)`;
       ctx.lineWidth = Math.max(1, t);
       ctx.setLineDash([dashA, dashB]);
-
       ctx.beginPath();
       switch (edge) {
-        case 'top':
-          ctx.moveTo(t / 2, inset + t / 2);
-          ctx.lineTo(w - t / 2, inset + t / 2);
-          break;
-        case 'bottom':
-          ctx.moveTo(t / 2, h - (inset + t / 2));
-          ctx.lineTo(w - t / 2, h - (inset + t / 2));
-          break;
-        case 'left':
-          ctx.moveTo(inset + t / 2, t / 2);
-          ctx.lineTo(inset + t / 2, h - t / 2);
-          break;
-        case 'right':
-          ctx.moveTo(w - (inset + t / 2), t / 2);
-          ctx.lineTo(w - (inset + t / 2), h - t / 2);
-          break;
+        case 'top': ctx.moveTo(t/2, inset + t/2); ctx.lineTo(w - t/2, inset + t/2); break;
+        case 'bottom': ctx.moveTo(t/2, h - (inset + t/2)); ctx.lineTo(w - t/2, h - (inset + t/2)); break;
+        case 'left': ctx.moveTo(inset + t/2, t/2); ctx.lineTo(inset + t/2, h - t/2); break;
+        case 'right': ctx.moveTo(w - (inset + t/2), t/2); ctx.lineTo(w - (inset + t/2), h - t/2); break;
       }
       ctx.stroke();
     }
   };
-
   ['top', 'right', 'bottom', 'left'].forEach(draw);
-  ctx.setLineDash([]);
-  ctx.restore();
+  ctx.setLineDash([]); ctx.restore();
 }
-
 function guideShapes(ctx,w,h,R){ const n=3+Math.floor(R()*3); for(let i=0;i<n;i++){ const s=Math.min(w,h)*(0.012+R()*0.014); const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s; ctx.save(); ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
   ctx.globalAlpha=.28; ctx.fillStyle='rgba(0,255,255,.18)'; ctx.strokeStyle='rgba(0,255,255,.85)'; ctx.lineWidth=Math.max(1,s*0.03);
   const t=R(); if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); ctx.stroke(); } else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.restore(); } }
 function guideStripes(ctx,w,h,R){ const a=0; const sw=Math.max(0.5,Math.min(w,h)*0.009), gap=Math.max(1,sw*4.5), len=Math.sqrt(w*w+h*h)+sw*2; ctx.save(); ctx.translate(w/2,h/2); ctx.rotate(a); ctx.fillStyle='rgba(255,0,200,.15)'; for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2); ctx.restore(); }
+function guideWM(ctx,w,h){ const s=Math.min(w,h)*0.26; const x=(w-s)/2, y=(h-s)/2; ctx.save(); ctx.strokeStyle='rgba(255,255,0,.7)'; ctx.setLineDash([6,6]); ctx.lineWidth=2; ctx.strokeRect(x,y,s,s); ctx.restore(); }
 
 const LOOKS={warm:{low:'contrast(1.02) saturate(1.06) sepia(.06) brightness(1.02)',mid:'contrast(1.05) saturate(1.12) sepia(.10) brightness(1.03)',high:'contrast(1.09) saturate(1.2) sepia(.16) brightness(1.04)'},
 cool:{low:'contrast(1.03) saturate(1.06) hue-rotate(180deg)',mid:'contrast(1.06) saturate(1.1) hue-rotate(190deg)',high:'contrast(1.1) saturate(1.18) hue-rotate(200deg)'},
@@ -831,14 +794,42 @@ function hash32(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.char
 function mul32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
-/* ---------- targets: MP4 + WebM ---------- */
-function getTargetsBoth(){
-  const mp4='video/mp4;codecs=h264';
-  const webm=(MediaRecorder.isTypeSupported('video/webm;codecs=vp9')&&'video/webm;codecs=vp9')||(MediaRecorder.isTypeSupported('video/webm;codecs=vp8')&&'video/webm;codecs=vp8')||(MediaRecorder.isTypeSupported('video/webm')&&'video/webm')||'';
+/* ---------- targets: según selección ---------- */
+function bestWebMMime(){
+  return (MediaRecorder.isTypeSupported('video/webm;codecs=vp9') && 'video/webm;codecs=vp9') ||
+         (MediaRecorder.isTypeSupported('video/webm;codecs=vp8') && 'video/webm;codecs=vp8') ||
+         (MediaRecorder.isTypeSupported('video/webm') && 'video/webm') || '';
+}
+function getTargetsFromUI(){
+  const choice = els.format?.value || 'both';
+  const mp4Mime = 'video/mp4;codecs=h264';
+  const mp4OK = MediaRecorder.isTypeSupported(mp4Mime);
+  const webmMime = bestWebMMime();
+  const webmOK = !!webmMime;
+
+  // decisión
+  if (choice === 'mp4') {
+    if (mp4OK) return [{label:'mp4', mime: mp4Mime}];
+    alert('MP4 no soportado por este navegador. Exportaré en WebM.');
+    if (webmOK) return [{label:'webm', mime: webmMime}];
+    return []; // imposible
+  }
+  if (choice === 'webm') {
+    if (webmOK) return [{label:'webm', mime: webmMime}];
+    alert('WebM no soportado por este navegador. Intentaré MP4.');
+    if (mp4OK) return [{label:'mp4', mime: mp4Mime}];
+    return [];
+  }
+  if (choice === 'auto') {
+    if (mp4OK) return [{label:'mp4', mime: mp4Mime}];
+    if (webmOK) return [{label:'webm', mime: webmMime}];
+    return [];
+  }
+  // both
   const list=[];
-  if(webm) list.push({label:'webm',mime:webm});
-  if(MediaRecorder.isTypeSupported(mp4)) list.push({label:'mp4',mime:mp4});
-  return list.length?list:[{label:'webm',mime:'video/webm'}];
+  if (mp4OK) list.push({label:'mp4', mime: mp4Mime});
+  if (webmOK) list.push({label:'webm', mime: webmMime});
+  return list.length ? list : [];
 }
 
 /* ---------- SRT/VTT ---------- */
@@ -893,8 +884,14 @@ function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo
 /* ---------- notas ---------- */
 function updateFormatNote(){
   const mp4OK=MediaRecorder.isTypeSupported('video/mp4;codecs=h264');
-  const webmOK=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')||MediaRecorder.isTypeSupported('video/webm;codecs=vp8')||MediaRecorder.isTypeSupported('video/webm');
-  els.formatNote.textContent=`Soporte navegador → MP4:${mp4OK?'✔':'✖'} / WebM:${webmOK?'✔':'✖'}`;
+  const webmOK=!!bestWebMMime();
+  const sel = els.format?.value || 'both';
+  let will = '';
+  if (sel==='mp4') will = mp4OK ? 'MP4' : (webmOK ? 'WebM (fallback)' : 'Ninguno');
+  else if (sel==='webm') will = webmOK ? 'WebM' : (mp4OK ? 'MP4 (fallback)' : 'Ninguno');
+  else if (sel==='auto') will = mp4OK ? 'MP4' : (webmOK ? 'WebM' : 'Ninguno');
+  else will = (mp4OK && webmOK) ? 'MP4 + WebM' : (mp4OK ? 'MP4' : (webmOK ? 'WebM' : 'Ninguno'));
+  els.formatNote.textContent=`Soporte → MP4:${mp4OK?'✔':'✖'} / WebM:${webmOK?'✔':'✖'} • Exportará: ${will}`;
 }
 updateFormatNote();
 
