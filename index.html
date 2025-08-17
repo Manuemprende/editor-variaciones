@@ -6,40 +6,86 @@
 <title>Editor de Singularidad para ADS</title>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
-:root{--bg1:#0a0f1a;--bg2:#0b1320;--card:#0e1626;--stroke:#1c2740;--fg:#e9f0ff;--muted:#a9b8d6;--primary:#3b82f6}
+/* ======= Tema moderno y amplio ======= */
+:root{
+  --bg1:#0a0f1a;--bg2:#0b1320;--card:#0e1626;--stroke:#1c2740;--fg:#e9f0ff;--muted:#a9b8d6;--primary:#3b82f6;
+  --pvH:74vh; /* altura de la vista previa */
+}
 *{box-sizing:border-box}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;color:var(--fg);
-background:radial-gradient(1200px 800px at 15% 10%,rgba(59,130,246,.08),transparent 60%),linear-gradient(180deg,var(--bg1),var(--bg2));
-min-height:100vh;display:flex;align-items:center;justify-content:center;padding:34px;-webkit-font-smoothing:antialiased}
-.app{width:100%;max-width:1120px;background:var(--card);border:1px solid var(--stroke);border-radius:20px;padding:26px;box-shadow:0 10px 40px rgba(0,0,0,.35)}
-.header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
-h1{margin:0;font-size:28px;font-weight:800;letter-spacing:.1px;text-align:center}
-.sub{color:var(--muted);font-size:14px;text-align:center}
+html,body{height:100%}
+body{
+  margin:0;
+  font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+  color:var(--fg);
+  background:
+    radial-gradient(1400px 900px at 15% 8%,rgba(59,130,246,.08),transparent 60%),
+    linear-gradient(180deg,var(--bg1),var(--bg2));
+  padding:40px 32px;
+  -webkit-font-smoothing:antialiased;
+}
+.app{
+  width:100%;
+  max-width:1400px;
+  margin:0 auto;
+  background:var(--card);
+  border:1px solid var(--stroke);
+  border-radius:24px;
+  padding:32px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+}
+.header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:12px}
+h1{margin:0;font-size:32px;line-height:1.15;font-weight:800;letter-spacing:.2px;text-align:center}
+.sub{color:var(--muted);font-size:14.5px;text-align:center}
 .desc{margin-top:8px;color:#b8c6e8;font-size:13.5px;text-align:center}
-.grid{display:grid;grid-template-columns:1.12fr .88fr;gap:24px;margin-top:12px}
-@media (max-width:980px){.grid{grid-template-columns:1fr}}
-.drop,.drop-mini{border:2px dashed var(--stroke);border-radius:14px;display:flex;align-items:center;justify-content:center;text-align:center;background:#0a1324;cursor:pointer;transition:.15s}
-.drop{min-height:200px;padding:22px;margin-bottom:12px}.drop-mini{min-height:84px;padding:12px}
+
+/* ======= Layout ancho ======= */
+.grid{display:grid;grid-template-columns:1.25fr .95fr;gap:28px;margin-top:16px}
+.left-col{position:sticky;top:24px;align-self:start}
+@media (max-width:1160px){.grid{grid-template-columns:1fr}.left-col{position:static}}
+.drop,.drop-mini{
+  border:2px dashed var(--stroke);border-radius:14px;display:flex;align-items:center;justify-content:center;
+  text-align:center;background:#0a1324;cursor:pointer;transition:.15s
+}
+.drop{min-height:200px;padding:22px;margin-bottom:14px}
+.drop-mini{min-height:84px;padding:12px}
 .drop:hover,.drop-mini:hover{border-color:#2a3a64}.drop.dragover,.drop-mini.dragover{border-color:var(--primary)}
 .hidden{display:none!important}.visually-hidden{position:absolute!important;width:1px;height:1px;clip-path:inset(50%)}
-.preview{position:relative;border:1px solid var(--stroke);border-radius:12px;background:#0b1426;padding:18px;min-height:320px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-video,canvas{max-width:100%;max-height:520px;border-radius:10px;image-rendering:crisp-edges}
+
+/* Vista previa grande */
+.preview{
+  position:relative;border:1px solid var(--stroke);border-radius:16px;background:#0b1426;
+  padding:18px;min-height:420px;display:flex;align-items:center;justify-content:center;overflow:hidden
+}
+video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rendering:crisp-edges}
 .overlay{position:absolute;inset:0;pointer-events:none}
-.field{background:#0b162e;border:1px solid #21345e;padding:14px 12px;border-radius:12px;color:var(--fg);display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px}
-.btn{appearance:none;border:1px solid #203055;background:#101a32;color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px}
-.btn:hover{border-color:#2a3b6b;background:#0e1830}.btn.primaria{background:var(--primary);border-color:#2e6fe0;color:#0b1220}
+
+/* Controles */
+.field{
+  background:#0b162e;border:1px solid #21345e;padding:14px 12px;border-radius:14px;
+  color:var(--fg);display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:14px
+}
+.btn{
+  appearance:none;border:1px solid #203055;background:
+  linear-gradient(180deg,#142340,#0f1a33);
+  color:#fff;padding:10px 14px;border-radius:12px;cursor:pointer;font-weight:700;font-size:14px
+}
+.btn:hover{border-color:#2a3b6b;background:#0e1830}
+.btn.primaria{background:linear-gradient(180deg,#6ea5ff,#4078ff);border-color:#2e6fe0;color:#0b1220}
 .help{font-size:12.5px;color:#a9b8d6}.filename{font-size:12.5px;color:#9fb7ff}
 .progress{height:10px;background:#0a1428;border:1px solid #1c2f55;border-radius:999px;overflow:hidden;margin-top:12px}
 .bar{height:100%;width:0%;background:linear-gradient(90deg,var(--primary),#67a5ff);transition:width .2s}
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 .left-download{margin-top:18px}
 .left-download .buttons{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
-input[type="text"],input[type="number"],select,textarea{background:#0b162e;border:1px solid #21345e;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none}
+input[type="text"],input[type="number"],select,textarea{
+  background:#0b162e;border:1px solid #21345e;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none
+}
 textarea{min-height:110px;width:100%}
-.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.chips{display:flex;gap:8px;flex-wrap:wrap}
-.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #21345e;padding:6px 10px;border-radius:999px;font-size:12.5px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.chips{display:flex;gap:8px;flex-wrap:wrap}.chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #21345e;padding:6px 10px;border-radius:999px;font-size:12.5px}
 .hr{height:1px;background:#182b52;margin:8px 0 2px}
-/* jobs */
+
+/* Jobs */
 .jobs{margin-top:10px;display:flex;flex-direction:column;gap:10px}
 .job{background:#0b162e;border:1px solid #21345e;border-radius:12px;padding:10px 12px}
 .job .title{font-size:12.5px;color:#cfe0ff;margin-bottom:6px}
@@ -55,8 +101,8 @@ textarea{min-height:110px;width:100%}
   </div>
 
   <div class="grid">
-    <!-- IZQUIERDA -->
-    <div>
+    <!-- IZQUIERDA (sticky) -->
+    <div class="left-col">
       <div id="drop" class="drop" tabindex="0" role="button" aria-label="Subir archivo">
         <div>
           <div style="font-weight:800;font-size:16px;margin-bottom:6px">Haz clic o suelta aquí tu imagen/video</div>
@@ -77,13 +123,10 @@ textarea{min-height:110px;width:100%}
         <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
       </div>
 
-      <!-- Descarga + barras (barras arriba; botones abajo) -->
+      <!-- Descarga -->
       <div class="left-download">
-        <!-- progreso general -->
         <div class="progress"><div id="bar" class="bar"></div></div>
-        <!-- progreso por job -->
         <div id="jobs" class="jobs"></div>
-        <!-- botones -->
         <div class="buttons">
           <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
           <button id="cancelBtn" class="btn" type="button" disabled>Cancelar</button>
@@ -92,7 +135,7 @@ textarea{min-height:110px;width:100%}
       </div>
     </div>
 
-    <!-- DERECHA -->
+    <!-- DERECHA (controles) -->
     <div>
       <div class="field">
         <label for="count"><b>Variaciones (imagen o Video)</b></label>
@@ -265,7 +308,7 @@ textarea{min-height:110px;width:100%}
 <script>
 (()=>{ const $=id=>document.getElementById(id);
 
-/* ------------- refs UI ------------- */
+/* === refs UI === */
 const els={
   drop:$('drop'),file:$('file'),fileInfo:$('fileInfo'),fileName:$('fileName'),changeBtn:$('changeBtn'),
   preview:$('preview'),mirrorBtn:$('mirrorBtn'),clearBtn:$('clearBtn'),
@@ -287,7 +330,7 @@ const MAX_VIDEO=15*1024*1024;
 const state={file:null,kind:null,url:null,logo:null,mirror:false,abort:false,previewSeed:null,
              pv:{wrap:null,video:null,ovStatic:null,ovDyn:null,cleanup:()=>{}},subs:[]};
 
-/* ---------- helpers de UI ---------- */
+/* === helpers === */
 const throttle=(fn,ms)=>{let t=0;return(...a)=>{const n=performance.now();if(n-t>=ms){t=n;fn(...a);}}};
 function setEnabled(v){ els.downloadBtn.disabled=!v; els.clearBtn.disabled=!v; els.mirrorBtn.disabled=!v; }
 function setProgress(p){ els.bar.style.width=Math.max(0,Math.min(100,p))+'%'; }
@@ -301,7 +344,7 @@ function clearAll(){
   els.jobs.innerHTML=''; setProgress(0);
 }
 
-/* ---------- drop / file ---------- */
+/* === archivo principal === */
 els.drop.addEventListener('click',()=>{ els.file.value=''; els.file.click(); });
 els.drop.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); els.file.value=''; els.file.click(); }});
 ['dragenter','dragover'].forEach(ev=>els.drop.addEventListener(ev,e=>{e.preventDefault();e.stopPropagation();els.drop.classList.add('dragover');}));
@@ -310,12 +353,12 @@ els.drop.addEventListener('drop',e=>{ const f=e.dataTransfer.files?.[0]; if(f) h
 els.file.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(f) handleMain(f); });
 els.changeBtn.addEventListener('click',()=>{ els.file.value=''; els.file.click(); });
 
-/* ---------- logo ---------- */
+/* === logo === */
 ['click','keydown'].forEach(ev=>els.dropLogo.addEventListener(ev,e=>{ if(ev==='keydown' && !(e.key==='Enter'||e.key===' ')) return; e.preventDefault(); els.logoFile.value=''; els.logoFile.click(); }));
 els.logoFile.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; if(!/^image\/(png|jpeg)$/.test(f.type)) return alert('Logo: PNG/JPG'); const u=URL.createObjectURL(f); const img=new Image(); img.onload=()=>{ state.logo=img; URL.revokeObjectURL(u); els.logoInfo.textContent='Logo: '+f.name; els.logoInfo.classList.remove('hidden'); renderPreview(); }; img.src=u; });
 els.clearLogo.addEventListener('click',()=>{ state.logo=null; els.logoInfo.classList.add('hidden'); els.logoFile.value=''; renderPreview(); });
 
-/* ---------- subtítulos ---------- */
+/* === subtítulos === */
 els.subsEnable.addEventListener('change',()=>{ els.subsBox.classList.toggle('hidden',!els.subsEnable.checked); renderPreview(); });
 els.subsLoad.addEventListener('click',()=>els.subsFile.click());
 els.subsFile.addEventListener('change',async e=>{ const f=e.target.files?.[0]; if(!f)return; const txt=await f.text(); state.subs=parseSubs(txt); renderPreview(); });
@@ -323,7 +366,7 @@ els.subsPaste.addEventListener('click',()=>els.subsText.classList.toggle('hidden
 els.subsText.addEventListener('input',()=>{ if(els.subsAuto.checked) state.subs=autoFromText(els.subsText.value, parseInt(els.subsDur.value||'2',10)); else state.subs=parseSubs(els.subsText.value); renderPreview(); });
 els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value=''; renderPreview(); });
 
-/* ---------- opciones que refrescan preview ---------- */
+/* === refrescos de preview === */
 [
  'abEnable','abPreview','abIntensity','arOrig','ar11','ar45','ar916','ar169','arPref','abExtra','abExtraRandom',
  'optBorder','optBorderMulti','optShapes','optStripes','optCenterWM','optInspect',
@@ -331,14 +374,14 @@ els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value='
  'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes'
 ].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.('change',renderPreview); });
 
-/* Semilla → refresco */
+/* semilla */
 els.seedRnd.addEventListener('click',()=>{ els.seed.value=genSeed(); renderPreview(); });
 els.seed.addEventListener('input', renderPreview);
 
 els.mirrorBtn.addEventListener('click',()=>{ if(!state.file) return; state.mirror=!state.mirror; els.mirrorBtn.textContent=state.mirror?'Espejo ACTIVADO ↔':'Espejo ↔'; renderPreview(); });
 els.clearBtn.addEventListener('click',clearAll);
 
-/* ---------- manejo archivo ---------- */
+/* === manejo archivo === */
 async function handleMain(file){
   const isImage=/^image\/(png|jpeg|gif|webp)$/.test(file.type);
   const isVideo=file.type==='video/mp4';
@@ -357,7 +400,7 @@ async function handleMain(file){
   renderPreview(); updateFormatNote();
 }
 
-/* ---------- image loader robusto ---------- */
+/* === cargar imagen robusto === */
 async function loadBitmap(file){
   try{
     if ('createImageBitmap' in window){
@@ -382,7 +425,7 @@ async function loadBitmap(file){
 const getW = img => img._w || img.naturalWidth || img.width;
 const getH = img => img._h || img.naturalHeight || img.height;
 
-/* ---------- anti-flicker overlay (más invisible) ---------- */
+/* === overlay invisible (bordes + shapes + franjas estáticas MUY sutil) === */
 function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
   const R = makeRNG(seed || 'ov');
   const allowStripes = !!options.allowStripes && !els.noFlicker?.checked;
@@ -472,7 +515,7 @@ function buildOverlayCanvas(w,h,seed){
   return ov;
 }
 
-/* ---------- Franjas dinámicas (aleatorias y animadas) ---------- */
+/* === Franjas dinámicas aleatorias === */
 function drawInvisibleDynamic(ctx, w, h, seed, t) {
   if (!els.optStripes?.checked) return;
   const R = makeRNG((seed || 'dyn') + '|stripes');
@@ -507,7 +550,7 @@ function drawInvisibleDynamic(ctx, w, h, seed, t) {
   ctx.restore();
 }
 
-/* ---------- PREVIEW ---------- */
+/* === Preview === */
 function drawGuidesSafe(ctx,w,h,R){
   try{
     if(!ctx||!w||!h||w<=1||h<=1) return;
@@ -528,14 +571,12 @@ function renderPreview(){
         const showAB=els.abPreview.checked && els.abEnable.checked;
         let ow=getW(bmp), oh=getH(bmp);
         let crop={sx:0,sy:0,sw:ow,sh:oh};
-
         if(showAB && !els.noCrop.checked){
           const ratio=getPreferredAspect(ow,oh,R); 
           crop=computeCrop(ow,oh,ratio,R);
         }
-
         const out={w:crop.sw,h:crop.sh};
-        const fitC=fit(out.w,out.h,960,540);
+        const fitC=fit(out.w,out.h,1120,720);
         const dpr=window.devicePixelRatio||1;
         const cssW=Math.max(1,Math.round(fitC.w)), cssH=Math.max(1,Math.round(fitC.h));
         const c=document.createElement('canvas'); 
@@ -564,9 +605,8 @@ function renderPreview(){
     let ro=null, onTime=null;
 
     const rebuildStatic=()=>{
-      // calcular tamaño del overlay según lo que se esté mostrando
       let w=v.clientWidth, h=v.clientHeight;
-      if(!w||!h){ const f=fit(v.videoWidth||640,v.videoHeight||360,960,540); w=f.w; h=f.h; }
+      if(!w||!h){ const f=fit(v.videoWidth||640,v.videoHeight||360,1120,720); w=f.w; h=f.h; }
       ovStatic.width=w; ovStatic.height=h; ovStatic.style.width=w+'px'; ovStatic.style.height=h+'px';
       const octx=ovStatic.getContext('2d'); const R2=makeRNG(seed+'|pv'); octx.clearRect(0,0,w,h);
       const staticOV = buildOverlayCanvas(w,h,seed+'|pv-static');
@@ -576,7 +616,7 @@ function renderPreview(){
 
     const updateDyn=throttle(()=>{
       let w=v.clientWidth, h=v.clientHeight;
-      if(!w||!h){ const f=fit(v.videoWidth||640,v.videoHeight||360,960,540); w=f.w; h=f.h; }
+      if(!w||!h){ const f=fit(v.videoWidth||640,v.videoHeight||360,1120,720); w=f.w; h=f.h; }
       ovDyn.width=w; ovDyn.height=h; ovDyn.style.width=w+'px'; ovDyn.style.height=h+'px';
       const dctx=ovDyn.getContext('2d'); dctx.clearRect(0,0,w,h);
 
@@ -589,9 +629,8 @@ function renderPreview(){
       v.style.position='static'; v.style.left='0px'; v.style.top='0px';
       v.style.transform=state.mirror?'scaleX(-1)':'none'; wrap.style.overflow='visible'; v.style.filter='none';
 
-      // SIN A/B o sin recorte/letterbox → mostrar directo
       if(!showAB || (!els.letterbox.checked && els.noCrop.checked)){
-        v.style.maxWidth='100%'; v.style.maxHeight='520px';
+        v.style.maxWidth='100%'; v.style.maxHeight='var(--pvH)';
         if(showAB) v.style.filter=pickLook(els.abIntensity.value,makeRNG(seed+'|look') );
         rebuildStatic(); return;
       }
@@ -599,10 +638,9 @@ function renderPreview(){
       const R3=makeRNG(seed+'|pv3');
       const targetAR=getPreferredAspect(v.videoWidth,v.videoHeight,R3);
 
-      // PREVIEW CROPPED
       if(!els.letterbox.checked){
         const crop=computeCrop(v.videoWidth,v.videoHeight,targetAR,R3);
-        const fitC=fit(crop.sw,crop.sh,960,540);
+        const fitC=fit(crop.sw,crop.sh,1120,720);
         wrap.style.width=fitC.w+'px'; wrap.style.height=fitC.h+'px'; wrap.style.overflow='hidden';
 
         const s=Math.min(fitC.w/crop.sw, fitC.h/crop.sh);
@@ -614,8 +652,8 @@ function renderPreview(){
         return;
       }
 
-      // PREVIEW LETTERBOX (sin recortar)
-      const box=boxForAspect(targetAR,960,540);
+      // Letterbox
+      const box=boxForAspect(targetAR,1120,720);
       wrap.style.width=box.w+'px'; wrap.style.height=box.h+'px'; wrap.style.overflow='hidden';
       const s=Math.min(box.w/v.videoWidth, box.h/v.videoHeight);
       const w=Math.round(v.videoWidth*s), h=Math.round(v.videoHeight*s);
@@ -636,7 +674,7 @@ function renderPreview(){
   }
 }
 
-/* ---------- exportar (multi-jobs + barras) ---------- */
+/* === Exportar === */
 els.cancelBtn.addEventListener('click',()=>{ state.abort=true; });
 els.downloadBtn.addEventListener('click', doExport);
 
@@ -655,37 +693,28 @@ async function doExport(){
       for(let i=1;i<=N;i++){
         const R=makeRNG(seedBase+`|img|${i}`); const showAB=els.abEnable.checked;
         let ow=getW(bmp), oh=getH(bmp); let crop={sx:0,sy:0,sw:ow,sh:oh};
-
-        if(showAB && !els.noCrop.checked){
-          const ratio=getPreferredAspect(ow,oh,R);
-          crop=computeCrop(ow,oh,ratio,R);
-        }
+        if(showAB && !els.noCrop.checked){ const ratio=getPreferredAspect(ow,oh,R); crop=computeCrop(ow,oh,ratio,R); }
         const w=crop.sw, h=crop.sh;
         const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
         ctx.save(); if(state.mirror){ctx.translate(w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
         ctx.drawImage(bmp,crop.sx,crop.sy,crop.sw,crop.sh,0,0,w,h); ctx.restore(); ctx.filter='none';
         const ov=buildOverlayCanvas(w,h,seedBase+`|imgov|${i}`); ctx.drawImage(ov,0,0);
         const blob=await new Promise(r=>c.toBlob(r,'image/png',0.95)); zip.file(`${base}_img_${i}.png`,blob,{binary:true});
-        job.pct(i*(100/N));
-        setProgress((i/N)*100*0.9);
-        if(state.abort) break;
+        job.pct(i*(100/N)); setProgress((i/N)*100*0.9); if(state.abort) break;
       }
       job.done();
     }else{
       const info=await videoMeta(state.url);
-      const targets=getTargetsBySelection(); // según selector
+      const targets=getTargetsBySelection();
       const count=Math.max(1,Math.min(3,parseInt(els.vidCount.value||'1',10)));
       const plan=parseSegments(els.segments?.value||'', info.duration);
-
-      const totalJobs=targets.length*count;
-      let finished=0;
+      const totalJobs=targets.length*count; let finished=0;
 
       for(const t of targets){
         for(let i=1;i<=count;i++){
           const job=createJob(`Video ${t.label.toUpperCase()} • variación ${i}/${count}`);
           await exportOneVideo({t,idx:i,info,plan,seedBase,baseName:base,zip,job,jobIdx:finished,totalJobs});
-          finished++; job.done();
-          if(state.abort) break;
+          finished++; job.done(); if(state.abort) break;
         }
         if(state.abort) break;
       }
@@ -695,7 +724,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS',
-        version:'v36-ar-preference-letterbox',
+        version:'v36-ar-preference-letterbox-ui-wide',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
@@ -713,36 +742,21 @@ async function doExport(){
 
 async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,totalJobs}){
   const R=makeRNG(seedBase+`|vid|${t.label}|${idx}`);
-
-  // Elegir AR objetivo según preferencia
   const targetAR=getPreferredAspect(info.width,info.height,R);
 
-  // Elegir salida (crop o letterbox) y tamaño final
   let crop={sx:0,sy:0,sw:info.width,sh:info.height};
   let outW, outH;
 
   if(els.letterbox.checked){
-    // Canvas con AR objetivo y encaje del video dentro (sin upscale al mantener resolución)
     if(els.keepRes.checked){
-      if(targetAR >= info.width/info.height){
-        outW = makeEven(info.width);
-        outH = makeEven(Math.floor(outW/targetAR));
-      }else{
-        outH = makeEven(info.height);
-        outW = makeEven(Math.floor(outH*targetAR));
-      }
+      if(targetAR >= info.width/info.height){ outW = makeEven(info.width); outH = makeEven(Math.floor(outW/targetAR)); }
+      else { outH = makeEven(info.height); outW = makeEven(Math.floor(outH*targetAR)); }
     }else{
       const maxSide = els.hqQuality?.checked ? 1080 : 720;
-      if(targetAR >= 1){ // más ancho que alto
-        outW = makeEven(maxSide);
-        outH = makeEven(Math.floor(outW/targetAR));
-      }else{
-        outH = makeEven(maxSide);
-        outW = makeEven(Math.floor(outH*targetAR));
-      }
+      if(targetAR >= 1){ outW = makeEven(maxSide); outH = makeEven(Math.floor(outW/targetAR)); }
+      else{ outH = makeEven(maxSide); outW = makeEven(Math.floor(outH*targetAR)); }
     }
   }else{
-    // Recorte clásico
     crop = (els.abEnable.checked && !els.noCrop.checked) ? computeCrop(info.width,info.height,targetAR,R) : crop;
     outW=crop.sw; outH=crop.sh;
     if(!els.keepRes.checked){
@@ -786,7 +800,6 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
     ctx.save(); if(state.mirror){ctx.translate(outW,0);ctx.scale(-1,1);} ctx.filter=els.abEnable.checked?pickLook(els.abIntensity.value,R):'none';
 
     if(els.letterbox.checked){
-      // Fondo (barras)
       ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
       const s=Math.min(outW/info.width, outH/info.height);
       const w=Math.round(info.width*s), h=Math.round(info.height*s);
@@ -823,11 +836,11 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   drawFrame();
 
   await new Promise(r=>rec.onstop=()=>r());
-  const ext = t.label; // 'mp4' o 'webm'
+  const ext = t.label;
   const blob=new Blob(chunks,{type:rec.mimeType}); zip.file(`${baseName}_${ext}_${String(idx).padStart(2,'0')}.${ext}`,blob,{binary:true});
 }
 
-/* ---------- job UI ---------- */
+/* === Jobs === */
 function createJob(title){
   const box=document.createElement('div'); box.className='job';
   const h=document.createElement('div'); h.className='title'; h.textContent=title;
@@ -837,7 +850,7 @@ function createJob(title){
   return { pct:(v)=>{ bar.style.width=Math.max(0,Math.min(100,v))+'%'; }, done:()=>{ bar.style.width='100%'; } };
 }
 
-/* ---------- looks/guías/util ---------- */
+/* === Looks/guías/util === */
 function drawABExtra(ctx,w,h,R,logo){
   if (els?.noFlicker?.checked) return;
   let mode=els.abExtra.value; if(els.abExtraRandom.checked){ const opts=['vignette-soft','corner-shadows','rounded-soft','grain-light','tint-hue','dot-grid']; if(logo) opts.push('logo-corner'); mode=opts[Math.floor(R()*opts.length)]; }
@@ -887,16 +900,13 @@ function guideBorderMulti(ctx, w, h, R) {
   ctx.setLineDash([]); ctx.restore();
 }
 
-/* ⬇️ Guías de franjas con semilla */
+/* Guías franjas (seed) */
 function guideStripes(ctx, w, h, R) {
   const angle = (R() * 360 - 180) * Math.PI / 180;
   const sw = Math.max(0.5, Math.min(w, h) * (0.006 + R() * 0.006));
   const gap = Math.max(1, sw * (3.2 + R() * 2.8));
   const len = Math.sqrt(w*w + h*h) + sw*2;
-  ctx.save();
-  ctx.translate(w/2, h/2);
-  ctx.rotate(angle);
-  ctx.fillStyle = 'rgba(255,0,200,.18)';
+  ctx.save(); ctx.translate(w/2, h/2); ctx.rotate(angle); ctx.fillStyle = 'rgba(255,0,200,.18)';
   for (let x=-len; x<=len; x+=gap) ctx.fillRect(x, -len, sw, len*2);
   ctx.restore();
 }
@@ -922,7 +932,6 @@ function getPreferredAspect(ow,oh,R){
     if(pref==='9:16') return 9/16;
     if(pref==='16:9') return 16/9;
   }
-  // Auto: si solo una no-orig está marcada, úsala determinísticamente
   const single = singleSelectedAR();
   if(single) return single;
   return pickAspect(ow,oh,R);
@@ -939,11 +948,7 @@ function singleSelectedAR(){
 function pickAspect(ow,oh,R){ const a=[]; if(els.arOrig.checked)a.push('orig'); if(els.ar11.checked)a.push('1:1'); if(els.ar45.checked)a.push('4:5'); if(els.ar916.checked)a.push('9:16'); if(els.ar169.checked)a.push('16:9'); const tag=a.length?a[Math.floor(R()*a.length)]:'orig'; if(tag==='orig') return ow/oh; if(tag==='1:1') return 1; if(tag==='4:5') return 4/5; if(tag==='9:16') return 9/16; if(tag==='16:9') return 16/9; return ow/oh; }
 function computeCrop(ow,oh,ratio,R){ const w=Math.min(ow,Math.round(oh*ratio)); const h=Math.min(oh,Math.round(ow/ratio)); const maxX=Math.max(0,ow-w), maxY=Math.max(0,oh-h); const ox=Math.round((maxX/2)+(R()-.5)*maxX*.6), oy=Math.round((maxY/2)+(R()-.5)*maxY*.6); return {sx:clamp(ox,0,maxX), sy:clamp(oy,0,maxY), sw:w, sh:h}; }
 function fit(w,h,maxW,maxH){ const r=Math.min(maxW/w,maxH/h,1); return {w:Math.round(w*r),h:Math.round(h*r)}; }
-function boxForAspect(ar, maxW, maxH){
-  const boxAR = maxW/maxH;
-  if(ar>=boxAR){ const w=Math.min(maxW, Math.round(maxH*ar)); return {w, h:Math.round(w/ar)}; }
-  const h=Math.min(maxH, Math.round(maxW/ar)); return {w:Math.round(h*ar), h};
-}
+function boxForAspect(ar, maxW, maxH){ const boxAR = maxW/maxH; if(ar>=boxAR){ const w=Math.min(maxW, Math.round(maxH*ar)); return {w, h:Math.round(w/ar)}; } const h=Math.min(maxH, Math.round(maxW/ar)); return {w:Math.round(h*ar), h}; }
 function makeEven(n){ n = Math.max(2, Math.round(n)); return n % 2 ? n-1 : n; }
 function download(blob,name){ const a=document.createElement('a'); const u=URL.createObjectURL(blob); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1200); }
 function videoMeta(u){ return new Promise((res,rej)=>{ const v=document.createElement('video'); v.src=u; v.onloadedmetadata=()=>res({width:v.videoWidth,height:v.videoHeight,duration:v.duration}); v.onerror=rej; }); }
@@ -953,7 +958,7 @@ function hash32(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.char
 function mul32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
 
-/* ---------- targets según selector ---------- */
+/* === targets por selección === */
 function getTargetsBySelection(){
   const want = els.format?.value || 'both';
   const mp4='video/mp4;codecs=h264';
@@ -977,7 +982,7 @@ function getTargetsBySelection(){
   return list.length?list:[{label:'webm',mime:'video/webm'}];
 }
 
-/* ---------- SRT/VTT ---------- */
+/* === SRT/VTT === */
 function parseSubs(text){
   if(!text) return [];
   const t = text.replace(/^\uFEFF/, '').replace(/\r/g,'');
@@ -997,17 +1002,8 @@ function parseSubs(text){
   }
   return cues.length ? cues : autoFromText(t, 2);
 }
-function toSec(s){
-  s=(s||'').replace(',', '.').trim();
-  const p=s.split(':').map(Number);
-  if(p.length===3) return p[0]*3600 + p[1]*60 + (p[2]||0);
-  if(p.length===2) return p[0]*60 + (p[1]||0);
-  return Number(s)||0;
-}
-function autoFromText(t, per=2){
-  const lines=t.split('\n').map(x=>x.trim()).filter(Boolean);
-  let cur=0; return lines.map(txt=>({start:cur, end:(cur+=per), text:txt}));
-}
+function toSec(s){ s=(s||'').replace(',', '.').trim(); const p=s.split(':').map(Number); if(p.length===3) return p[0]*3600 + p[1]*60 + (p[2]||0); if(p.length===2) return p[0]*60 + (p[1]||0); return Number(s)||0; }
+function autoFromText(t, per=2){ const lines=t.split('\n').map(x=>x.trim()).filter(Boolean); let cur=0; return lines.map(txt=>({start:cur, end:(cur+=per), text:txt})); }
 function drawSubs(ctx,w,h,t,cues,opt){
   const c=cues.find(q=>t>=q.start&&t<q.end); if(!c) return;
   const pad=Math.round(Math.min(w,h)*0.03), f=clamp(opt.size||24,12,48); ctx.save(); ctx.font=`700 ${f}px system-ui,-apple-system,Segoe UI,Roboto,Arial`; ctx.textBaseline='bottom';
@@ -1021,12 +1017,12 @@ function drawSubs(ctx,w,h,t,cues,opt){
   ctx.restore();
 }
 
-/* ---------- segments ---------- */
+/* === segments === */
 function parseSegments(s,dur){ if(!s) return []; return s.split(',').map(p=>p.trim()).map(r=>{const m=r.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/); if(!m) return null; const a=+m[1], b=+m[2]; if(b>a && a<dur) return {start:clamp(a,0,dur), end:clamp(b,0,dur)}; return null; }).filter(Boolean); }
 function seek(v,t){ return new Promise(r=>{ try{v.currentTime=t;}catch{} v.onseeked=r; v.onloadeddata&&r(); }); }
 function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y,h); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 
-/* ---------- notas ---------- */
+/* === notas === */
 function updateFormatNote(){
   const mp4OK=MediaRecorder.isTypeSupported('video/mp4;codecs=h264');
   const webmOK=MediaRecorder.isTypeSupported('video/webm;codecs=vp9')||MediaRecorder.isTypeSupported('video/webm;codecs=vp8')||MediaRecorder.isTypeSupported('video/webm');
