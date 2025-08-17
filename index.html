@@ -314,7 +314,10 @@ els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value='
  'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes'
 ].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.('change',renderPreview); });
 
+/* Semilla → refresco */
 els.seedRnd.addEventListener('click',()=>{ els.seed.value=genSeed(); renderPreview(); });
+els.seed.addEventListener('input', renderPreview);
+
 els.mirrorBtn.addEventListener('click',()=>{ if(!state.file) return; state.mirror=!state.mirror; els.mirrorBtn.textContent=state.mirror?'Espejo ACTIVADO ↔':'Espejo ↔'; renderPreview(); });
 els.clearBtn.addEventListener('click',clearAll);
 
@@ -367,18 +370,15 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
   const R = makeRNG(seed || 'ov');
   const allowStripes = !!options.allowStripes && !els.noFlicker?.checked;
 
-  // 1) Borde simple (más fino y más tenue)
   if (els.optBorder.checked) {
     const size = Math.max(1, Math.round(Math.min(w, h) * (0.002 + 0.0015)));
     ctx.save(); ctx.lineWidth = size; ctx.strokeStyle = 'rgba(255,255,255,0.06)';
     ctx.strokeRect(size/2, size/2, w-size, h-size); ctx.restore();
   }
-
-  // 2) Borde multicolor sutil (más tenue)
   if (els.optBorderMulti.checked && !els.noFlicker?.checked) {
     const s = Math.max(1, Math.round(Math.min(w, h) * 0.0045));
     const base = R() * 360;
-    const baseAlpha = 0.04 + R() * 0.04; // 0.04–0.08
+    const baseAlpha = 0.04 + R() * 0.04;
     const drawEdgeStripes = (edge) => {
       const n = R.int(1, 2);
       for (let k = 0; k < n; k++) {
@@ -410,8 +410,6 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
     ['top', 'right', 'bottom', 'left'].forEach(drawEdgeStripes);
     ctx.restore();
   }
-
-  // 3) Figuras casi invisibles
   if (els.optShapes.checked) {
     const n = 2 + Math.floor(R()*3);
     for (let i=0;i<n;i++){
@@ -426,8 +424,6 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
       ctx.restore();
     }
   }
-
-  // 4) Franjas estáticas: sólo si se permite (normalmente no; usamos dinámica)
   if (els.optStripes.checked && allowStripes) {
     const R2=makeRNG(seed+'|st');
     const a=(R2()*60-30)*Math.PI/180;
@@ -438,8 +434,6 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
     for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2);
     ctx.restore();
   }
-
-  // 5) Marca de agua centrada (muy tenue)
   if (els.optCenterWM.checked && state.logo) {
     const m=Math.min(w,h)*0.28;
     const r=Math.min(m/Math.max(state.logo.width,state.logo.height),1);
@@ -660,7 +654,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS',
-        version:'v34-dynstripes-format',
+        version:'v35-dynstripes-seeded-guides',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
@@ -724,7 +718,6 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
     ctx.restore(); ctx.filter='none';
 
     ctx.drawImage(overlayStatic,0,0);
-    // franjas dinámicas export
     drawInvisibleDynamic(ctx, outW, outH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
 
     if(els.subsEnable.checked && state.subs.length){
@@ -777,7 +770,7 @@ function drawGuides(ctx,w,h,R){
   guideBorder(ctx,w,h);
   if(els.optBorderMulti.checked) guideBorderMulti(ctx,w,h,R);
   if(els.optShapes.checked) guideShapes(ctx,w,h,R);
-  if(els.optStripes.checked) guideStripes(ctx,w,h,R);
+  if(els.optStripes.checked) guideStripes(ctx,w,h,R);  /* ← ahora usa la semilla */
   if(els.optCenterWM.checked) guideWM(ctx,w,h);
 }
 function guideBorder(ctx,w,h){ const s=Math.max(1,Math.round(Math.min(w,h)*0.006)); ctx.save(); ctx.lineWidth=s; ctx.strokeStyle='rgba(255,255,0,.65)'; ctx.setLineDash([8,6]); ctx.strokeRect(s/2,s/2,w-s,h-s); ctx.restore(); }
@@ -810,10 +803,24 @@ function guideBorderMulti(ctx, w, h, R) {
   ['top', 'right', 'bottom', 'left'].forEach(draw);
   ctx.setLineDash([]); ctx.restore();
 }
+
+/* ⬇️ Guías de franjas AHORA con semilla */
+function guideStripes(ctx, w, h, R) {
+  const angle = (R() * 360 - 180) * Math.PI / 180;
+  const sw = Math.max(0.5, Math.min(w, h) * (0.006 + R() * 0.006));
+  const gap = Math.max(1, sw * (3.2 + R() * 2.8));
+  const len = Math.sqrt(w*w + h*h) + sw*2;
+  ctx.save();
+  ctx.translate(w/2, h/2);
+  ctx.rotate(angle);
+  ctx.fillStyle = 'rgba(255,0,200,.18)';
+  for (let x=-len; x<=len; x+=gap) ctx.fillRect(x, -len, sw, len*2);
+  ctx.restore();
+}
+
 function guideShapes(ctx,w,h,R){ const n=3+Math.floor(R()*3); for(let i=0;i<n;i++){ const s=Math.min(w,h)*(0.012+R()*0.014); const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s; ctx.save(); ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
   ctx.globalAlpha=.28; ctx.fillStyle='rgba(0,255,255,.18)'; ctx.strokeStyle='rgba(0,255,255,.85)'; ctx.lineWidth=Math.max(1,s*0.03);
   const t=R(); if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); ctx.stroke(); } else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.restore(); } }
-function guideStripes(ctx,w,h,R){ const a=0; const sw=Math.max(0.5,Math.min(w,h)*0.009), gap=Math.max(1,sw*4.5), len=Math.sqrt(w*w+h*h)+sw*2; ctx.save(); ctx.translate(w/2,h/2); ctx.rotate(a); ctx.fillStyle='rgba(255,0,200,.15)'; for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2); ctx.restore(); }
 function guideWM(ctx,w,h){ const s=Math.min(w,h)*0.25; ctx.save(); ctx.setLineDash([6,6]); ctx.strokeStyle='rgba(255,255,0,.65)'; ctx.strokeRect((w-s)/2,(h-s)/2,s,s); ctx.restore(); }
 
 const LOOKS={warm:{low:'contrast(1.02) saturate(1.06) sepia(.06) brightness(1.02)',mid:'contrast(1.05) saturate(1.12) sepia(.10) brightness(1.03)',high:'contrast(1.09) saturate(1.2) sepia(.16) brightness(1.04)'},
