@@ -76,12 +76,11 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;
   border:1px solid rgba(102,163,255,.18); box-shadow:0 10px 40px rgba(0,0,0,.35);
 }
 .preview::before{
-  /* borde neón suave */
   content:""; position:absolute; inset:0; border-radius:16px; pointer-events:none;
   box-shadow:0 0 0 1px rgba(124,242,255,.2), 0 0 40px rgba(124,242,255,.05) inset;
 }
 video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rendering:crisp-edges}
-.overlay{position:absolute;inset:16px;pointer-events:none}
+.overlay{position:absolute; left:0; top:0; pointer-events:none} /* ← sin inset para evitar corrimiento */
 .pv-wrap{position:relative;display:inline-block;contain:paint;will-change:transform,opacity;}
 
 /* ===== Controles ===== */
@@ -576,7 +575,7 @@ function drawInvisibleDynamic(ctx, w, h, seed, t) {
   ctx.restore();
 }
 
-/* ===================== PREVIEW: sin pestañazo ===================== */
+/* ===================== PREVIEW: sin pestañazo + overlay al área visible ===================== */
 class VideoPreview {
   constructor(root){
     this.root = root;
@@ -587,6 +586,7 @@ class VideoPreview {
     this.raf = null; this.onTime = null; this.ro = new ResizeObserver(()=>this.rebuild());
     this.ro.observe(this.wrap);
     this.opts = {};
+    this.contentRect = {x:0,y:0,w:0,h:0};
   }
   async load(src){
     if(this.video.src!==src){ this.video.src=src; await new Promise((res,rej)=>{ this.video.onloadedmetadata=res; this.video.onerror=rej; }); }
@@ -608,8 +608,10 @@ class VideoPreview {
       wrap.style.width=box.w+'px'; wrap.style.height=box.h+'px';
       const s=Math.min(box.w/vw, box.h/vh);
       const w=Math.round(vw*s), h=Math.round(vh*s);
+      const dx=Math.round((box.w-w)/2), dy=Math.round((box.h-h)/2);
       v.style.position='absolute'; v.style.width=w+'px'; v.style.height=h+'px';
-      v.style.left=Math.round((box.w-w)/2)+'px'; v.style.top=Math.round((box.h-h)/2)+'px';
+      v.style.left=dx+'px'; v.style.top=dy+'px';
+      this.contentRect = {x:dx,y:dy,w,h}; // ← área visible del video
     }else if(cropRect){
       const f=fit(cropRect.sw,cropRect.sh,maxW,maxH);
       wrap.style.width=f.w+'px'; wrap.style.height=f.h+'px';
@@ -617,32 +619,41 @@ class VideoPreview {
       const w=Math.round(vw*s), h=Math.round(vh*s);
       v.style.position='absolute'; v.style.width=w+'px'; v.style.height=h+'px';
       v.style.left=Math.round(-cropRect.sx*s)+'px'; v.style.top=Math.round(-cropRect.sy*s)+'px';
+      this.contentRect = {x:0,y:0,w:f.w,h:f.h};
     }else{
       v.style.position='static'; v.style.maxWidth='100%'; v.style.maxHeight='var(--pvH)';
       wrap.style.width='auto'; wrap.style.height='auto';
+      // En este caso el video ocupa todo el wrap
+      const f=fit(vw,vh,maxW,maxH);
+      this.contentRect = {x:0,y:0,w:f.w,h:f.h};
     }
   }
   rebuild(){
-    const v=this.video;
     const {seed, subsOn, subs, subsSize, subsBg} = this.opts;
-    let w=v.clientWidth, h=v.clientHeight;
-    if(!w||!h){ const f=fit(v.videoWidth||640,v.videoHeight||360,1120,720); w=f.w; h=f.h; }
-    [this.ovStatic,this.ovDyn].forEach(ov=>{ ov.width=w; ov.height=h; ov.style.width=w+'px'; ov.style.height=h+'px'; });
+    const rect=this.contentRect;
+    if(rect.w<=0||rect.h<=0){ return; }
+
+    // dimensionar y posicionar los lienzos EXACTAMENTE sobre el área visible
+    [this.ovStatic,this.ovDyn].forEach(ov=>{
+      ov.width=rect.w; ov.height=rect.h;
+      ov.style.width=rect.w+'px'; ov.style.height=rect.h+'px';
+      ov.style.left=rect.x+'px'; ov.style.top=rect.y+'px';
+    });
 
     // Static overlay
-    const octx=this.ovStatic.getContext('2d'); octx.clearRect(0,0,w,h);
-    const staticOV = buildOverlayCanvas(w,h,(seed||'pv')+'|static');
+    const octx=this.ovStatic.getContext('2d'); octx.clearRect(0,0,rect.w,rect.h);
+    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static');
     octx.drawImage(staticOV,0,0);
-    if(els.optInspect.checked) drawGuidesSafe(octx,w,h,makeRNG((seed||'pv')+'|g'));
+    if(els.optInspect.checked) drawGuidesSafe(octx,rect.w,rect.h,makeRNG((seed||'pv')+'|g'));
 
     // Dynamic loop
     const dctx=this.ovDyn.getContext('2d');
     const tick=()=>{
       if(!this.video || this.video.ended) return;
-      dctx.clearRect(0,0,w,h);
-      drawInvisibleDynamic(dctx, w, h, (seed||'pv')+'|dyn', this.video.currentTime);
+      dctx.clearRect(0,0,rect.w,rect.h);
+      drawInvisibleDynamic(dctx, rect.w, rect.h, (seed||'pv')+'|dyn', this.video.currentTime);
       if(subsOn && subs?.length){
-        drawSubs(dctx,w,h,this.video.currentTime,subs,{size:subsSize,bg:subsBg});
+        drawSubs(dctx,rect.w,rect.h,this.video.currentTime,subs,{size:subsSize,bg:subsBg});
       }
       this.raf = requestAnimationFrame(tick);
     };
@@ -661,7 +672,6 @@ class VideoPreview {
   }
 }
 
-/* ===================== Render Preview (reusa video) ===================== */
 function drawGuidesSafe(ctx,w,h,R){
   try{
     if(!ctx||!w||!h||w<=1||h<=1) return;
@@ -703,7 +713,7 @@ async function renderPreview(){
     return;
   }
 
-  // Video: reusar sin pestañazos
+  // Video: reusar sin pestañazos + overlays al área visible
   if(!state.pv.controller){ state.pv.controller = new VideoPreview(els.preview); }
   const pv = state.pv.controller;
   await pv.load(state.url);
@@ -761,7 +771,7 @@ async function doExport(){
       job.done();
     }else{
       const info=await videoMeta(state.url);
-      const targets=getTargetsBySelection(); // formatos confiables
+      const targets=getTargetsBySelection();
       const count=Math.max(1,Math.min(3,parseInt(els.vidCount.value||'1',10)));
       const plan=parseSegments(els.segments?.value||'', info.duration);
       const totalJobs=targets.length*count; let finished=0;
@@ -780,7 +790,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS — Pro',
-        version:'v37-preview-reuse-no-flicker',
+        version:'v38-overlay-aligned-letterbox',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
@@ -800,25 +810,26 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   const R=makeRNG(seedBase+`|vid|${t.label}|${idx}`);
   const targetAR=getPreferredAspect(info.width,info.height,R);
 
+  // Dimensiones de salida y del área visible (para letterbox)
   let crop={sx:0,sy:0,sw:info.width,sh:info.height};
-  let outW, outH;
+  let outW, outH, viewW, viewH, dx=0, dy=0;
 
   if(els.letterbox.checked){
-    if(els.keepRes.checked){
-      if(targetAR >= info.width/info.height){ outW = makeEven(info.width); outH = makeEven(Math.floor(outW/targetAR)); }
-      else { outH = makeEven(info.height); outW = makeEven(Math.floor(outH*targetAR)); }
-    }else{
-      const maxSide = els.hqQuality?.checked ? 1080 : 720;
-      if(targetAR >= 1){ outW = makeEven(maxSide); outH = makeEven(Math.floor(outW/targetAR)); }
-      else{ outH = makeEven(maxSide); outW = makeEven(Math.floor(outH*targetAR)); }
-    }
+    // construimos OUT al AR preferido; luego centramos el video dentro
+    const maxSide = els.keepRes.checked ? Math.max(info.width,info.height) : (els.hqQuality?.checked?1080:720);
+    if(targetAR >= 1){ outW = makeEven(maxSide); outH = makeEven(Math.floor(outW/targetAR)); }
+    else{ outH = makeEven(maxSide); outW = makeEven(Math.floor(outH*targetAR)); }
+    const s=Math.min(outW/info.width, outH/info.height);
+    viewW = Math.round(info.width*s); viewH = Math.round(info.height*s);
+    dx = Math.round((outW-viewW)/2); dy = Math.round((outH-viewH)/2);
   }else{
     crop = (els.abEnable.checked && !els.noCrop.checked) ? computeCrop(info.width,info.height,targetAR,R) : crop;
-    outW=crop.sw; outH=crop.sh;
+    outW=crop.sw; outH=crop.sh; viewW=outW; viewH=outH;
     if(!els.keepRes.checked){
       const maxSide = els.hqQuality?.checked ? 1080 : 720;
       const scale = Math.min(1, maxSide/Math.max(outW,outH));
       outW = makeEven(Math.round(outW*scale)); outH = makeEven(Math.round(outH*scale));
+      viewW = outW; viewH = outH;
     }else{ outW = makeEven(outW); outH = makeEven(outH); }
   }
 
@@ -830,7 +841,8 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   const stream=c.captureStream(fps); try{ const vs=v.captureStream(); const aud=vs.getAudioTracks(); if(aud&&aud.length) stream.addTrack(aud[0]); }catch{}
   const chunks=[]; const rec=new MediaRecorder(stream,{mimeType:t.mime,videoBitsPerSecond:bps}); rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
 
-  const overlayStatic = buildOverlayCanvas(outW, outH, seedBase + '|ov|' + t.label + '|' + idx);
+  // overlay está alineado AL ÁREA VISIBLE (viewW x viewH)
+  const overlayStatic = buildOverlayCanvas(viewW, viewH, seedBase + '|ov|' + t.label + '|' + idx);
 
   let segments=parseSegments(els.segments?.value||'', info.duration);
   if(!segments.length){
@@ -857,22 +869,31 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
 
     if(els.letterbox.checked){
       ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
-      const s=Math.min(outW/info.width, outH/info.height);
-      const w=Math.round(info.width*s), h=Math.round(info.height*s);
-      const dx=Math.round((outW-w)/2), dy=Math.round((outH-h)/2);
-      ctx.drawImage(v,0,0,info.width,info.height, dx,dy, w,h);
-    }else if(els.noCrop.checked){
-      ctx.drawImage(v,0,0,info.width,info.height,0,0,outW,outH);
+      ctx.drawImage(v,0,0,info.width,info.height, dx,dy, viewW,viewH);
+      ctx.restore(); ctx.filter='none';
+
+      // overlay está posicionado en dx,dy
+      ctx.drawImage(overlayStatic, dx, dy);
+      ctx.save(); ctx.translate(dx,dy);
+      drawInvisibleDynamic(ctx, viewW, viewH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
+      ctx.restore();
     }else{
-      ctx.drawImage(v,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outW,outH);
+      if(els.noCrop.checked){ ctx.drawImage(v,0,0,info.width,info.height,0,0,outW,outH); }
+      else { ctx.drawImage(v,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outW,outH); }
+      ctx.restore(); ctx.filter='none';
+      ctx.drawImage(overlayStatic,0,0);
+      drawInvisibleDynamic(ctx, outW, outH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
     }
 
-    ctx.restore(); ctx.filter='none';
-    ctx.drawImage(overlayStatic,0,0);
-    drawInvisibleDynamic(ctx, outW, outH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
-
     if(els.subsEnable.checked && state.subs.length){
-      drawSubs(ctx,outW,outH,v.currentTime,state.subs,{size:+els.subsSize.value||24,bg:els.subsBg.checked});
+      // subtítulos siempre en el área visible
+      if(els.letterbox.checked){
+        ctx.save(); ctx.translate(dx,dy);
+        drawSubs(ctx,viewW,viewH,v.currentTime,state.subs,{size:+els.subsSize.value||24,bg:els.subsBg.checked});
+        ctx.restore();
+      }else{
+        drawSubs(ctx,outW,outH,v.currentTime,state.subs,{size:+els.subsSize.value||24,bg:els.subsBg.checked});
+      }
     }
 
     const done=segments.slice(0,idxSeg).reduce((a,s)=>a+(s.end-s.start),0) + (v.currentTime-segments[idxSeg].start);
@@ -925,8 +946,6 @@ function drawGuides(ctx,w,h,R){
   if(els.optCenterWM.checked) guideWM(ctx,w,h);
 }
 function guideBorder(ctx,w,h){ const s=Math.max(1,Math.round(Math.min(w,h)*0.006)); ctx.save(); ctx.lineWidth=s; ctx.strokeStyle='rgba(255,255,0,.65)'; ctx.setLineDash([8,6]); ctx.strokeRect(s/2,s/2,w-s,h-s); ctx.restore(); }
-
-/* Borde multicolor (guía) */
 function guideBorderMulti(ctx, w, h, R) {
   const s = Math.max(1, Math.round(Math.min(w, h) * 0.006));
   ctx.save(); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
@@ -954,8 +973,6 @@ function guideBorderMulti(ctx, w, h, R) {
   ['top', 'right', 'bottom', 'left'].forEach(draw);
   ctx.setLineDash([]); ctx.restore();
 }
-
-/* Guías franjas (seed) */
 function guideStripes(ctx, w, h, R) {
   const angle = (R() * 360 - 180) * Math.PI / 180;
   const sw = Math.max(0.5, Math.min(w, h) * (0.006 + R() * 0.006));
@@ -965,7 +982,6 @@ function guideStripes(ctx, w, h, R) {
   for (let x=-len; x<=len; x+=gap) ctx.fillRect(x, -len, sw, len*2);
   ctx.restore();
 }
-
 function guideShapes(ctx,w,h,R){ const n=3+Math.floor(R()*3); for(let i=0;i<n;i++){ const s=Math.min(w,h)*(0.012+R()*0.014); const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s; ctx.save(); ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
   ctx.globalAlpha=.28; ctx.fillStyle='rgba(0,255,255,.18)'; ctx.strokeStyle='rgba(0,255,255,.85)'; ctx.lineWidth=Math.max(1,s*0.03);
   const t=R(); if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); ctx.stroke(); } else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.restore(); } }
