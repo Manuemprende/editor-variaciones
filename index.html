@@ -78,17 +78,21 @@ textarea{min-height:110px;width:100%}
       </div>
 
       <!-- IZQUIERDA: Descarga + barras -->
-      <div class="left-download">
-        <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
-        <div class="help">Salida imágenes: PNG. Vídeo: MP4 y WebM (si el navegador soporta MP4). Todo 100% en tu navegador.</div>
-        <!-- progreso general -->
-        <div class="progress"><div id="bar" class="bar"></div></div>
-        <!-- progreso por job -->
-        <div id="jobs" class="jobs"></div>
-      </div>
-      <!-- Botón cancelar oculto para no romper el script -->
-      <button id="cancelBtn" class="visually-hidden" type="button">Cancelar</button>
-    </div>
+<div class="left-download">
+  <button id="downloadBtn" class="btn primaria" disabled type="button">
+    Descargar variaciones (.zip)
+  </button>
+  <div class="help">
+    Salida imágenes: PNG. Vídeo: MP4 y WebM (si el navegador soporta MP4).
+    Todo 100% en tu navegador.
+  </div>
+  <div class="progress"><div id="bar" class="bar"></div></div>
+  <div id="jobs" class="jobs"></div>
+</div>
+
+<!-- Botón cancelar oculto para no romper el script -->
+<button id="cancelBtn" class="visually-hidden" type="button">Cancelar</button>
+
 
     <!-- DERECHA -->
     <div>
