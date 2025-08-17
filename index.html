@@ -83,11 +83,7 @@ h1{margin:0;font-size:32px;line-height:1.12;font-weight:900;letter-spacing:.3px;
 }
 .pv-wrap{position:relative; display:inline-block; contain:paint; will-change:transform,opacity;}
 .pv-wrap video{position:relative; z-index:1;}
-/* Las capas de overlay van por encima SIEMPRE */
-.overlay{
-  position:absolute; left:0; top:0; pointer-events:none;
-  z-index:5;
-}
+.overlay{position:absolute; left:0; top:0; pointer-events:none; z-index:5;}
 video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rendering:crisp-edges}
 
 .zoombar{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
@@ -188,6 +184,22 @@ textarea{min-height:110px;width:100%}
 
     <!-- DERECHA -->
     <div>
+
+      <!-- PRESETS DE PLATAFORMA -->
+      <div class="field">
+        <div class="row" style="gap:12px;align-items:center">
+          <b>Preset plataforma</b>
+          <select id="preset">
+            <option value="custom" selected>Personalizado</option>
+            <option value="tiktok">TikTok / Reels (9:16)</option>
+            <option value="igfeed">Instagram Feed (1:1)</option>
+            <option value="igportrait">Instagram Portrait (4:5)</option>
+            <option value="youtube">YouTube (16:9)</option>
+          </select>
+        </div>
+        <span class="help">Ajusta AR preferido + letterbox automáticamente. Puedes seguir cambiando lo que quieras.</span>
+      </div>
+
       <div class="field">
         <label for="count"><b>Variaciones (imagen o Video)</b></label>
         <input id="count" type="number" min="1" max="10" value="6" style="width:72px;text-align:center"/>
@@ -381,6 +393,7 @@ const els={
   preview:$('preview'),mirrorBtn:$('mirrorBtn'),clearBtn:$('clearBtn'),
   zoomRange:$('zoomRange'),zoomVal:$('zoomVal'),zoomFit:$('zoomFit'),
   count:$('count'),countHelp:$('countHelp'),zipname:$('zipname'),
+  preset:$('preset'),
   seed:$('seed'),seedRnd:$('seedRnd'),downloadBtn:$('downloadBtn'),cancelBtn:$('cancelBtn'),bar:$('bar'),jobs:$('jobs'),
   optBorder:$('optBorder'),optBorderMulti:$('optBorderMulti'),optShapes:$('optShapes'),optStripes:$('optStripes'),optCenterWM:$('optCenterWM'),optInspect:$('optInspect'),
   dropLogo:$('dropLogo'),logoFile:$('logoFile'),logoInfo:$('logoInfo'),clearLogo:$('clearLogo'),
@@ -477,6 +490,19 @@ els.subsPaste.addEventListener('click',()=>els.subsText.classList.toggle('hidden
 els.subsText.addEventListener('input',()=>{ if(els.subsAuto.checked) state.subs=autoFromText(els.subsText.value, parseInt(els.subsDur.value||'2',10)); else state.subs=parseSubs(els.subsText.value); renderPreview(); });
 els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value=''; renderPreview(); });
 
+/* ===================== Presets ===================== */
+els.preset.addEventListener('change',()=>{
+  const v = els.preset.value;
+  if(v==='custom') return;
+  // deselecciona todo, luego marca el target
+  const setAR=(o11,o45,o916,o169,orig,pref)=>{ els.ar11.checked=o11; els.ar45.checked=o45; els.ar916.checked=o916; els.ar169.checked=o169; els.arOrig.checked=orig; els.arPref.value=pref; };
+  if(v==='tiktok'){ setAR(false,false,true,false,false,'9:16'); els.letterbox.checked=true; }
+  if(v==='igfeed'){ setAR(true,false,false,false,false,'1:1'); els.letterbox.checked=true; }
+  if(v==='igportrait'){ setAR(false,true,false,false,false,'4:5'); els.letterbox.checked=true; }
+  if(v==='youtube'){ setAR(false,false,false,true,false,'16:9'); els.letterbox.checked=true; }
+  renderPreview();
+});
+
 /* ===================== Preview triggers ===================== */
 [
  'abEnable','abPreview','abIntensity','arOrig','ar11','ar45','ar916','ar169','arPref','abExtra','abExtraRandom',
@@ -535,9 +561,34 @@ const getW = img => img._w || img.naturalWidth || img.width;
 const getH = img => img._h || img.naturalHeight || img.height;
 
 /* ===================== Overlays invisibles ===================== */
+function drawStripeLayer(ctx,w,h,angle,alphaSeed,R,speedPhase){
+  // una capa de franjas rotadas
+  const swBase  = Math.max(0.6, Math.min(w, h) * (0.003 + R()*0.004));
+  const gapBase = Math.max(1, swBase * (3.4 + R() * 2.2));
+  const len = Math.sqrt(w*w + h*h) + swBase * 2;
+
+  ctx.save();
+  ctx.translate(w/2, h/2);
+  ctx.rotate(angle);
+  ctx.globalCompositeOperation='soft-light';
+
+  const alpha = alphaSeed;
+  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+
+  let x = -len + (speedPhase||0) % gapBase;
+  let i = 0;
+  while (x <= len) {
+    const k  = 1 + Math.sin(i * 0.37) * 0.05;
+    const sw = swBase * k;
+    ctx.fillRect(x, -len, sw, len * 2);
+    const step = gapBase * (1 + Math.sin(i * 0.23) * 0.04);
+    x += step; i++;
+  }
+  ctx.restore();
+}
+
 function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
   const R = makeRNG(seed || 'ov');
-  const allowStripes = !!options.allowStripes && !els.noFlicker?.checked;
 
   if (els.optBorder.checked) {
     const size = Math.max(1, Math.round(Math.min(w, h) * (0.002 + 0.0015)));
@@ -575,56 +626,42 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
         ctx.setLineDash([]);
       }
     };
-    ctx.save();
-    ['top', 'right', 'bottom', 'left'].forEach(drawEdgeStripes);
-    ctx.restore();
-  }
-  if (els.optShapes.checked) {
-    const n = 2 + Math.floor(R()*3);
-    for (let i=0;i<n;i++){
-      const s=Math.min(w,h)*(0.010+R()*0.012);
-      const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s;
-      ctx.save(); ctx.globalAlpha=0.0012+R()*0.0016; ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
-      ctx.fillStyle='hsl('+Math.floor(R()*360)+',55%,65%)';
-      const t=R();
-      if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); }
-      else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); }
-      else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); }
-      ctx.restore();
-    }
-  }
-  if (els.optStripes.checked && allowStripes) {
-    const R2=makeRNG(seed+'|st');
-    const a=(R2()*60-30)*Math.PI/180;
-    const sw=Math.max(0.5,Math.min(w,h)*(0.003+R2()*0.004));
-    const gap=Math.max(1,sw*(3.5+R2()*2));
-    const len=Math.sqrt(w*w+h*h)+sw*2;
-    ctx.save(); ctx.translate(w/2,h/2); ctx.rotate(a); ctx.globalCompositeOperation='soft-light'; ctx.fillStyle='rgba(255,255,255,0.0038)';
-    for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2);
-    ctx.restore();
+    ctx.save(); ['top','right','bottom','left'].forEach(drawEdgeStripes); ctx.restore();
   }
 
-  // Logo centrado (controlado)
+  // Franjas estáticas (visibles en IMÁGENES y también en preview/export si se quiere)
+  // - Si options.forImage === true -> siempre dibuja (no hay flicker).
+  // - Si video + anti-flicker -> saltará a dinámicas; aquí podemos dejar una capa muy tenue.
+  const wantStaticStripes = !!options.allowStripes || !!options.forImage;
+  if (els.optStripes.checked && wantStaticStripes) {
+    const layers = 1 + R.int(1,2); // 1-3 capas
+    for (let i=0;i<layers;i++){
+      const angle = (R()*360 - 180) * Math.PI/180;
+      const alpha = (options.forImage ? 0.0065 : (els.noFlicker?.checked?0.0032:0.0052)) * (0.85 + R()*0.4);
+      drawStripeLayer(ctx,w,h,angle,alpha,R,0);
+    }
+  }
+
+  // Logo centrado
   if (els.optCenterWM.checked && state.logo) {
-    const pct = (+els.logoSize.value||60)/100;           // tamaño relativo
+    const pct = (+els.logoSize.value||60)/100;
     const maxSide = Math.min(w,h) * pct;
     const r = Math.min(maxSide/Math.max(state.logo.width,state.logo.height),1);
     const lw=Math.round(state.logo.width*r), lh=Math.round(state.logo.height*r);
-    // Opacidad controlada: 1–100% mapeado a 0.005–0.15, con opción de resaltar en preview
-    const base = clamp((+els.logoOpacity.value||3)/100, 0.01, 1); // 0.01..1
-    let alpha = 0.005 + base*0.14; // 0.005..0.145
+    const base = clamp((+els.logoOpacity.value||3)/100, 0.01, 1);
+    let alpha = 0.005 + base*0.14;
     if(options.forPreview && els.logoHighlight.checked) alpha = Math.min(0.35, alpha*4);
-
     ctx.save(); ctx.globalAlpha=alpha;
     ctx.drawImage(state.logo,Math.round((w-lw)/2),Math.round((h-lh)/2),lw,lh);
     ctx.restore();
   }
 }
+
 function buildOverlayCanvas(w,h,seed,opt){
   const ov=document.createElement('canvas');
   ov.width=Math.max(1,Math.round(w)); ov.height=Math.max(1,Math.round(h));
   const octx=ov.getContext('2d');
-  drawInvisibleStatic(octx, ov.width, ov.height, seed, {...(opt||{}), allowStripes:false});
+  drawInvisibleStatic(octx, ov.width, ov.height, seed, {...(opt||{} )});
   if(!els.noFlicker?.checked){
     const R=makeRNG(seed+'|extra');
     drawABExtra(octx, ov.width, ov.height, R, state.logo);
@@ -632,39 +669,20 @@ function buildOverlayCanvas(w,h,seed,opt){
   return ov;
 }
 
-/* ==== Franjas dinámicas ==== */
+/* ==== Franjas dinámicas (video) en múltiples direcciones ==== */
 function drawInvisibleDynamic(ctx, w, h, seed, t) {
   if (!els.optStripes?.checked) return;
   const R = makeRNG((seed || 'dyn') + '|stripes');
-  const baseA = (R() * 360 - 180) * Math.PI / 180;
-  const drift  = (Math.sin(t * 0.6 + R() * 6) * 12) * Math.PI/180;
-  const a = baseA + drift;
-
-  const swBase  = Math.max(0.5, Math.min(w, h) * (0.0028 + R() * 0.003));
-  const gapBase = Math.max(1, swBase * (3.6 + R() * 2.0));
-  const len = Math.sqrt(w*w + h*h) + swBase * 2;
-
-  const speed = 8 + R() * 16;
-  const phase = (t * speed) % gapBase;
-
-  ctx.save();
-  ctx.translate(w/2, h/2);
-  ctx.rotate(a);
-  ctx.globalCompositeOperation = 'soft-light';
-  const alpha = els.noFlicker?.checked ? 0.0022 : 0.0043;
-  ctx.fillStyle = `rgba(255,255,255,${alpha})`;
-
-  let x = -len + phase;
-  let i = 0;
-  while (x <= len) {
-    const k  = 1 + Math.sin(t * 1.1 + i * 0.37) * 0.06;
-    const sw = swBase * k;
-    ctx.fillRect(x, -len, sw, len * 2);
-    const step = gapBase * (1 + Math.sin(t * 1.3 + i * 0.23) * 0.04);
-    x += step;
-    i++;
+  // 2 capas con direcciones independientes (opcional 3)
+  const layers = 2 + (R()<0.35?1:0); // 2 o 3
+  for(let i=0;i<layers;i++){
+    const baseA = (R() * 360 - 180) * Math.PI / 180;
+    const drift  = (Math.sin(t * (0.6 + R()*0.4) + R()*6) * (8+R()*10)) * Math.PI/180;
+    const angle = baseA + drift;
+    const alpha = (els.noFlicker?.checked ? 0.003 : 0.0065) * (0.85 + R()*0.35);
+    // fase distinta por capa para que no coincidan
+    drawStripeLayer(ctx,w,h,angle,alpha,R, (t* (6 + R()*10)) % 9999);
   }
-  ctx.restore();
 }
 
 /* ===================== PREVIEW: sin pestañazo + overlay al área visible ===================== */
@@ -679,7 +697,6 @@ class VideoPreview {
     this.ro.observe(this.wrap);
     this.opts = {};
     this.contentRect = {x:0,y:0,w:0,h:0};
-    // aplicar transformaciones actuales (zoom/pan)
     applyZoomPan();
   }
   async load(src){
@@ -732,11 +749,13 @@ class VideoPreview {
       ov.style.left=rect.x+'px'; ov.style.top=rect.y+'px';
     });
 
+    // Static overlay (sin flicker) — para video: solo borde/shapes/logo/extra
     const octx=this.ovStatic.getContext('2d'); octx.clearRect(0,0,rect.w,rect.h);
-    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static',{forPreview:true});
+    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static',{forPreview:true, allowStripes:false});
     octx.drawImage(staticOV,0,0);
     if(els.optInspect.checked) drawGuidesSafe(octx,rect.w,rect.h,makeRNG((seed||'pv')+'|g'));
 
+    // Dynamic loop (aquí van las franjas)
     const dctx=this.ovDyn.getContext('2d');
     const tick=()=>{
       if(!this.video || this.video.ended) return;
@@ -773,9 +792,7 @@ async function renderPreview(){
   if(!state.file){ els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>'; return; }
   const seed=(els.seed.value||'').trim() || state.previewSeed;
   const R=makeRNG(seed);
-
-  // reset zoom transform target
-  state.panX=state.panX||0; state.panY=state.panY||0; applyZoomPan();
+  applyZoomPan();
 
   if(state.kind==='image'){
     els.preview.innerHTML='';
@@ -799,7 +816,8 @@ async function renderPreview(){
       ctx.save(); if(state.mirror){ctx.translate(fitC.w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
       ctx.drawImage(bmp, src.sx,src.sy,src.sw,src.sh, 0,0, fitC.w,fitC.h); ctx.restore(); ctx.filter='none';
 
-      ctx.drawImage(buildOverlayCanvas(fitC.w,fitC.h,seed+'|imgpv',{forPreview:true}),0,0);
+      // overlay con stripes estáticas (forImage:true)
+      ctx.drawImage(buildOverlayCanvas(fitC.w,fitC.h,seed+'|imgpv',{forPreview:true, forImage:true, allowStripes:true}),0,0);
       if(els.optInspect.checked) drawGuidesSafe(ctx,fitC.w,fitC.h,R);
 
       applyZoomPan();
@@ -862,7 +880,9 @@ async function doExport(){
         const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
         ctx.save(); if(state.mirror){ctx.translate(w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
         ctx.drawImage(bmp,crop.sx,crop.sy,crop.sw,crop.sh,0,0,w,h); ctx.restore(); ctx.filter='none';
-        const ov=buildOverlayCanvas(w,h,seedBase+`|imgov|${i}`,{forPreview:false}); ctx.drawImage(ov,0,0);
+        // overlay con stripes estáticas en export de IMAGEN
+        const ov=buildOverlayCanvas(w,h,seedBase+`|imgov|${i}`,{forPreview:false, forImage:true, allowStripes:true}); 
+        ctx.drawImage(ov,0,0);
         const blob=await new Promise(r=>c.toBlob(r,'image/png',0.95)); zip.file(`${base}_img_${i}.png`,blob,{binary:true});
         job.pct(i*(100/N)); setProgress((i/N)*100*0.9); if(state.abort) break;
       }
@@ -888,7 +908,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS — Pro',
-        version:'v39-zoom-pan-guides',
+        version:'v40-presets-multidir-stripes',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
@@ -937,7 +957,7 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   const stream=c.captureStream(fps); try{ const vs=v.captureStream(); const aud=vs.getAudioTracks(); if(aud&&aud.length) stream.addTrack(aud[0]); }catch{}
   const chunks=[]; const rec=new MediaRecorder(stream,{mimeType:t.mime,videoBitsPerSecond:bps}); rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
 
-  const overlayStatic = buildOverlayCanvas(viewW, viewH, seedBase + '|ov|' + t.label + '|' + idx, {forPreview:false});
+  const overlayStatic = buildOverlayCanvas(viewW, viewH, seedBase + '|ov|' + t.label + '|' + idx, {forPreview:false, allowStripes:false});
 
   let segments=parseSegments(els.segments?.value||'', info.duration);
   if(!segments.length){
@@ -966,6 +986,7 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
       ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
       ctx.drawImage(v,0,0,info.width,info.height, dx,dy, viewW,viewH);
       ctx.restore(); ctx.filter='none';
+
       ctx.drawImage(overlayStatic, dx, dy);
       ctx.save(); ctx.translate(dx,dy);
       drawInvisibleDynamic(ctx, viewW, viewH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
