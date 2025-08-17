@@ -46,16 +46,9 @@ body::before{
 .header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
 h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;text-align:center}
 .sub{color:var(--muted);font-size:14.5px;text-align:center}
-.brand{
-  margin-top:8px;
-  font-size:12.5px;
-  color:#cfe3ff;
-  background:linear-gradient(90deg, rgba(124,242,255,.18), rgba(102,163,255,.18));
-  border:1px solid rgba(124,242,255,.3);
-  padding:6px 10px;
-  border-radius:999px;
-}
-.brand b{color:#ffffff}
+.desc{margin-top:8px;color:#bcd0f2;font-size:13.5px;text-align:center}
+.credits{margin-top:8px;font-size:13px;color:#9fc0ff}
+.credits b{color:#cfe0ff}
 
 /* ===== Layout ancho ===== */
 .grid{display:grid;grid-template-columns:1.25fr .95fr;gap:28px;margin-top:16px}
@@ -81,8 +74,7 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;
 /* ===== Vista previa ===== */
 .preview{
   position:relative; border-radius:16px; background:linear-gradient(180deg,#0b1426,#0a1224);
-  padding:16px; min-height:420px; display:flex; align-items:flex-start; justify-content:center; 
-  overflow:auto; /* ← para poder desplazarse cuando haces zoom */
+  padding:16px; min-height:420px; display:flex; align-items:center; justify-content:center; overflow:hidden;
   border:1px solid rgba(102,163,255,.18); box-shadow:0 10px 40px rgba(0,0,0,.35);
 }
 .preview::before{
@@ -91,7 +83,7 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;
 }
 video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rendering:crisp-edges}
 .overlay{position:absolute; left:0; top:0; pointer-events:none}
-.pv-wrap{position:relative;display:inline-block;contain:paint;will-change:transform,opacity}
+.pv-wrap{position:relative;display:inline-block;contain:paint;will-change:transform,opacity;}
 
 /* ===== Controles ===== */
 .field{
@@ -113,25 +105,21 @@ video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rende
 .toolbar{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
 .left-download{margin-top:18px}
 .left-download .buttons{display:flex;gap:12px;flex-wrap:wrap;margin-top:14px}
-input[type="text"],input[type="number"],select,textarea{
+input[type="text"],input[type="number"],select,textarea,input[type="range"]{
   background:#0c1834;border:1px solid #223a6b;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none
 }
+input[type="range"]{padding:6px 8px}
 textarea{min-height:110px;width:100%}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #223a6b;padding:6px 10px;border-radius:999px;font-size:12.5px}
 .hr{height:1px;background:#1c2c55;margin:8px 0 2px}
 
-/* Zoom UI */
-.zoombox{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px;
-  background:linear-gradient(180deg,var(--card),var(--card2));
-  border:1px solid var(--stroke2); padding:10px 12px; border-radius:12px;
-}
-.zoomval{min-width:42px;text-align:right;color:#cfe0ff}
-.range{appearance:none;width:200px;height:6px;border-radius:999px;background:#132347;outline:none}
-.range::-webkit-slider-thumb{appearance:none;width:16px;height:16px;border-radius:50%;background:#6ea5ff;border:1px solid #2e6fe0}
-.range::-moz-range-thumb{width:16px;height:16px;border:none;border-radius:50%;background:#6ea5ff}
+/* Jobs */
+.jobs{margin-top:10px;display:flex;flex-direction:column;gap:10px}
+.job{background:#0b162e;border:1px solid #21345e;border-radius:12px;padding:10px 12px}
+.job .title{font-size:12.5px;color:#cfe0ff;margin-bottom:6px}
+.job .progress{margin-top:6px}
 </style>
 </head>
 <body>
@@ -139,8 +127,8 @@ textarea{min-height:110px;width:100%}
   <div class="header">
     <h1>Editor de Singularidad para ADS</h1>
     <div class="sub">Variaciones <b>invisibles</b> + A/B sutil. PNG y MP4/WebM en tu navegador.</div>
-    <div class="brand">Creador: <b>Manu.EmprendeHoy</b> &amp; <b>DropDrop</b></div>
     <div class="desc">Propósito: reducir la repetición entre anuncios (no evadir revisiones).</div>
+    <div class="credits">Creador: <b>Manu.EmprendeHoy</b> & <b>DropDrop</b></div>
   </div>
 
   <div class="grid">
@@ -166,16 +154,6 @@ textarea{min-height:110px;width:100%}
         <button id="clearBtn" class="btn" disabled type="button">Limpiar</button>
       </div>
 
-      <!-- ZOOM PREVIEW -->
-      <div class="zoombox">
-        <b>Zoom preview</b>
-        <button id="zoomOut" class="btn" type="button">−</button>
-        <input id="zoomRange" class="range" type="range" min="50" max="200" value="100"/>
-        <button id="zoomIn" class="btn" type="button">+</button>
-        <button id="zoomReset" class="btn" type="button" title="100%">Reset</button>
-        <span id="zoomVal" class="zoomval">100%</span>
-      </div>
-
       <!-- Descarga -->
       <div class="left-download">
         <div class="progress"><div id="bar" class="bar"></div></div>
@@ -184,7 +162,7 @@ textarea{min-height:110px;width:100%}
           <button id="downloadBtn" class="btn primaria" disabled type="button">Descargar variaciones (.zip)</button>
           <button id="cancelBtn" class="btn" type="button" disabled>Cancelar</button>
         </div>
-        <div class="help" style="margin-top:10px">Salida imágenes: PNG/JPG/WebP. Vídeo: MP4 y/o WebM (según selección y soporte). Todo ocurre localmente.</div>
+        <div class="help" style="margin-top:10px">Salida imágenes: PNG. Vídeo: MP4 y/o WebM (según selección y soporte del navegador). Todo ocurre localmente.</div>
       </div>
     </div>
 
@@ -211,28 +189,6 @@ textarea{min-height:110px;width:100%}
           <button id="seedRnd" class="btn" type="button" title="Generar semilla">🎲</button>
         </div>
         <span class="help">Fija una semilla para reproducibilidad (incluye A/B y ambos formatos).</span>
-      </div>
-
-      <!-- PRESET PLATAFORMA -->
-      <div class="field" style="flex-direction:column;align-items:flex-start">
-        <div class="row" style="width:100%;justify-content:space-between;align-items:flex-end">
-          <div style="flex:1;min-width:240px">
-            <label><b>Preset plataforma</b></label>
-            <select id="preset" style="min-width:240px">
-              <option value="" selected>— Selecciona un preset —</option>
-              <option value="ig-11">Instagram Feed — 1:1</option>
-              <option value="ig-45">Instagram Feed — 4:5</option>
-              <option value="ig-916">Instagram Story/Reel — 9:16</option>
-              <option value="tt-916">TikTok — 9:16</option>
-              <option value="yt-916">YouTube Short — 9:16</option>
-              <option value="yt-169">YouTube — 16:9</option>
-              <option value="fb-11">Facebook Feed — 1:1</option>
-              <option value="li-11">LinkedIn Feed — 1:1</option>
-            </select>
-          </div>
-          <button id="applyPreset" class="btn" type="button" title="Aplicar preset">Aplicar</button>
-        </div>
-        <div class="help">Ajusta AR + letterbox + calidad + formato de exportación para la plataforma elegida (sin recortar por defecto en video).</div>
       </div>
 
       <!-- OPCIONES VIDEO -->
@@ -272,23 +228,6 @@ textarea{min-height:110px;width:100%}
 
         <span id="formatNote" class="help"></span>
         <span id="bothNote" class="help">Si tu navegador no soporta el formato elegido, se usará el disponible.</span>
-      </div>
-
-      <!-- IMÁGENES -->
-      <div class="field">
-        <div class="row" style="gap:16px;flex-wrap:wrap">
-          <b>Formato imágenes</b>
-          <label class="row">Tipo
-            <select id="imgFmt">
-              <option value="png" selected>PNG (sin pérdida)</option>
-              <option value="jpeg">JPG (con pérdida)</option>
-              <option value="webp">WebP</option>
-            </select>
-          </label>
-          <label class="row">Calidad
-            <input id="imgQ" type="number" min="60" max="100" value="95" style="width:70px;text-align:center"/>
-          </label>
-        </div>
       </div>
 
       <!-- INVISIBLES -->
@@ -390,6 +329,22 @@ textarea{min-height:110px;width:100%}
         <div id="dropLogo" class="drop-mini" tabindex="0" role="button"><b>Arrastra tu logo</b> o haz clic</div>
         <input id="logoFile" class="visually-hidden" type="file" accept="image/png,image/jpeg"/>
         <div id="logoInfo" class="filename hidden"></div>
+
+        <!-- NUEVOS CONTROLES DE LOGO -->
+        <div class="row" style="margin-top:10px;gap:16px;align-items:center">
+          <label class="row" style="gap:10px">
+            Tamaño
+            <input id="logoSize" type="range" min="10" max="60" step="1" value="28" style="width:160px"/>
+            <span id="logoSizeLbl" class="help">28%</span>
+          </label>
+          <label class="row" style="gap:10px">
+            Opacidad
+            <input id="logoAlpha" type="range" min="0.1" max="3" step="0.05" value="0.35" style="width:160px"/>
+            <span id="logoAlphaLbl" class="help">0.35%</span>
+          </label>
+          <label class="row"><input id="logoBoost" type="checkbox"/> Resaltar en preview</label>
+        </div>
+
         <div class="row" style="margin-top:6px"><button id="clearLogo" class="btn" type="button">Quitar logo</button></div>
       </div>
 
@@ -408,6 +363,7 @@ const els={
   seed:$('seed'),seedRnd:$('seedRnd'),downloadBtn:$('downloadBtn'),cancelBtn:$('cancelBtn'),bar:$('bar'),jobs:$('jobs'),
   optBorder:$('optBorder'),optBorderMulti:$('optBorderMulti'),optShapes:$('optShapes'),optStripes:$('optStripes'),optCenterWM:$('optCenterWM'),optInspect:$('optInspect'),
   dropLogo:$('dropLogo'),logoFile:$('logoFile'),logoInfo:$('logoInfo'),clearLogo:$('clearLogo'),
+  logoSize:$('logoSize'),logoAlpha:$('logoAlpha'),logoBoost:$('logoBoost'),logoSizeLbl:$('logoSizeLbl'),logoAlphaLbl:$('logoAlphaLbl'),
   videoOpts:$('videoOpts'),durFull:$('durFull'),durClip:$('durClip'),sec:$('sec'),randStart:$('randStart'),segments:$('segments'),
   format:$('format'),hqQuality:$('hqQuality'),noCrop:$('noCrop'),keepRes:$('keepRes'),vidCount:$('vidCount'),letterbox:$('letterbox'),
   abEnable:$('abEnable'),abPreview:$('abPreview'),abIntensity:$('abIntensity'),arOrig:$('arOrig'),ar11:$('ar11'),ar45:$('ar45'),ar916:$('ar916'),ar169:$('ar169'),
@@ -415,15 +371,12 @@ const els={
   abExtra:$('abExtra'),abExtraRandom:$('abExtraRandom'), perfLite:$('perfLite'), noFlicker:$('noFlicker'),
   subsEnable:$('subsEnable'),subsBox:$('subsBox'),subsLoad:$('subsLoad'),subsFile:$('subsFile'),subsPaste:$('subsPaste'),subsText:$('subsText'),subsClear:$('subsClear'),
   subsAuto:$('subsAuto'),subsDur:$('subsDur'),subsSize:$('subsSize'),subsBg:$('subsBg'),
-  formatNote:$('formatNote'),bothNote:$('bothNote'),
-  preset:$('preset'),applyPreset:$('applyPreset'),
-  imgFmt:$('imgFmt'),imgQ:$('imgQ'),
-  zoomRange:$('zoomRange'),zoomOut:$('zoomOut'),zoomIn:$('zoomIn'),zoomReset:$('zoomReset'),zoomVal:$('zoomVal')
+  formatNote:$('formatNote'),bothNote:$('bothNote')
 };
 
 const MAX_VIDEO=15*1024*1024;
 const state={file:null,kind:null,url:null,logo:null,mirror:false,abort:false,previewSeed:null,
-             pv:{controller:null,cleanup:()=>{}},subs:[], zoom:1};
+             pv:{controller:null,cleanup:()=>{}},subs:[]};
 
 /* ===================== helpers ===================== */
 const throttle=(fn,ms)=>{let t=0;return(...a)=>{const n=performance.now();if(n-t>=ms){t=n;fn(...a);}}};
@@ -432,12 +385,11 @@ function setProgress(p){ els.bar.style.width=Math.max(0,Math.min(100,p))+'%'; }
 function clearAll(){
   if(state.url) URL.revokeObjectURL(state.url);
   if(state.pv.controller) state.pv.controller.destroy();
-  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,previewSeed:null,subs:[],pv:{controller:null,cleanup:()=>{}},zoom:1});
+  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,previewSeed:null,subs:[],pv:{controller:null,cleanup:()=>{}}});
   els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>';
   els.mirrorBtn.textContent='Espejo ↔'; els.fileInfo.classList.add('hidden'); els.drop.classList.remove('hidden');
   els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; setEnabled(false);
   els.jobs.innerHTML=''; setProgress(0);
-  updateZoomUI();
 }
 
 /* ===================== Drop/File ===================== */
@@ -453,6 +405,16 @@ els.changeBtn.addEventListener('click',()=>{ els.file.value=''; els.file.click()
 ['click','keydown'].forEach(ev=>els.dropLogo.addEventListener(ev,e=>{ if(ev==='keydown' && !(e.key==='Enter'||e.key===' ')) return; e.preventDefault(); els.logoFile.value=''; els.logoFile.click(); }));
 els.logoFile.addEventListener('change',e=>{ const f=e.target.files?.[0]; if(!f) return; if(!/^image\/(png|jpeg)$/.test(f.type)) return alert('Logo: PNG/JPG'); const u=URL.createObjectURL(f); const img=new Image(); img.onload=()=>{ state.logo=img; URL.revokeObjectURL(u); els.logoInfo.textContent='Logo: '+f.name; els.logoInfo.classList.remove('hidden'); renderPreview(); }; img.src=u; });
 els.clearLogo.addEventListener('click',()=>{ state.logo=null; els.logoInfo.classList.add('hidden'); els.logoFile.value=''; renderPreview(); });
+function updateLogoUI(){
+  els.logoSizeLbl.textContent = (parseFloat(els.logoSize.value)||28) + '%';
+  els.logoAlphaLbl.textContent = (parseFloat(els.logoAlpha.value)||0.35) + '%';
+}
+['input','change'].forEach(ev=>{
+  els.logoSize.addEventListener(ev,()=>{updateLogoUI(); renderPreview();});
+  els.logoAlpha.addEventListener(ev,()=>{updateLogoUI(); renderPreview();});
+});
+els.logoBoost.addEventListener('change',renderPreview);
+updateLogoUI();
 
 /* ===================== Subtítulos ===================== */
 els.subsEnable.addEventListener('change',()=>{ els.subsBox.classList.toggle('hidden',!els.subsEnable.checked); renderPreview(); });
@@ -460,76 +422,20 @@ els.subsLoad.addEventListener('click',()=>els.subsFile.click());
 els.subsFile.addEventListener('change',async e=>{ const f=e.target.files?.[0]; if(!f)return; const txt=await f.text(); state.subs=parseSubs(txt); renderPreview(); });
 els.subsPaste.addEventListener('click',()=>els.subsText.classList.toggle('hidden'));
 els.subsText.addEventListener('input',()=>{ if(els.subsAuto.checked) state.subs=autoFromText(els.subsText.value, parseInt(els.subsDur.value||'2',10)); else state.subs=parseSubs(els.subsText.value); renderPreview(); });
+els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value=''; renderPreview(); });
 
 /* ===================== Preview triggers ===================== */
 [
  'abEnable','abPreview','abIntensity','arOrig','ar11','ar45','ar916','ar169','arPref','abExtra','abExtraRandom',
  'optBorder','optBorderMulti','optShapes','optStripes','optCenterWM','optInspect',
  'durFull','durClip','sec','randStart','segments','format','letterbox',
- 'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes',
- 'imgFmt','imgQ'
+ 'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes'
 ].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.('change',renderPreview); });
 
 els.seedRnd.addEventListener('click',()=>{ els.seed.value=genSeed(); renderPreview(); });
 els.seed.addEventListener('input', renderPreview);
 els.mirrorBtn.addEventListener('click',()=>{ if(!state.file) return; state.mirror=!state.mirror; els.mirrorBtn.textContent=state.mirror?'Espejo ACTIVADO ↔':'Espejo ↔'; renderPreview(); });
 els.clearBtn.addEventListener('click',clearAll);
-
-/* ===================== ZOOM ===================== */
-function updateZoomUI(){
-  const pct = Math.round(state.zoom*100);
-  els.zoomRange.value = String(pct);
-  els.zoomVal.textContent = pct+'%';
-  const node = els.preview.firstElementChild;
-  if(node){
-    node.style.transformOrigin='top center';
-    node.style.transform=`scale(${state.zoom})`;
-    node.style.display='inline-block';
-  }
-}
-els.zoomRange.addEventListener('input',()=>{
-  state.zoom = Math.max(0.5, Math.min(2, (+els.zoomRange.value)/100));
-  updateZoomUI();
-});
-els.zoomOut.addEventListener('click',()=>{ state.zoom=Math.max(0.5, +(state.zoom-0.1).toFixed(2)); updateZoomUI(); });
-els.zoomIn.addEventListener('click',()=>{ state.zoom=Math.min(2, +(state.zoom+0.1).toFixed(2)); updateZoomUI(); });
-els.zoomReset.addEventListener('click',()=>{ state.zoom=1; updateZoomUI(); });
-
-/* ===================== Preset plataforma ===================== */
-const PRESETS = {
-  'ig-11' : { ar:'1:1',  letterbox:true,  keepRes:false, hq:true,  format:'both' },
-  'ig-45' : { ar:'4:5',  letterbox:true,  keepRes:false, hq:true,  format:'both' },
-  'ig-916': { ar:'9:16', letterbox:true,  keepRes:false, hq:true,  format:'both' },
-  'tt-916': { ar:'9:16', letterbox:true,  keepRes:false, hq:true,  format:'both' },
-  'yt-916': { ar:'9:16', letterbox:true,  keepRes:false, hq:true,  format:'mp4'  },
-  'yt-169': { ar:'16:9', letterbox:true,  keepRes:false, hq:true,  format:'mp4'  },
-  'fb-11' : { ar:'1:1',  letterbox:true,  keepRes:false, hq:true,  format:'both' },
-  'li-11' : { ar:'1:1',  letterbox:true,  keepRes:false, hq:true,  format:'both' }
-};
-function setARUI(ratioTag){
-  els.arOrig.checked = false;
-  els.ar11.checked   = (ratioTag==='1:1');
-  els.ar45.checked   = (ratioTag==='4:5');
-  els.ar916.checked  = (ratioTag==='9:16');
-  els.ar169.checked  = (ratioTag==='16:9');
-  els.arPref.value   = ratioTag;
-}
-function applyPresetKey(key){
-  const p = PRESETS[key]; if(!p) return;
-  setARUI(p.ar);
-  els.letterbox.checked = !!p.letterbox;
-  els.keepRes.checked   = !!p.keepRes;
-  els.hqQuality.checked = !!p.hq;
-  els.format.value      = p.format || 'both';
-  els.imgFmt.value = 'png'; els.imgQ.value = 95;
-  // Si el nombre del zip está en su valor por defecto, lo renombramos con el preset
-  if((els.zipname.value||'').trim().toLowerCase()==='variaciones_ads'){
-    els.zipname.value = `variaciones_${key}`;
-  }
-  updateFormatNote();
-  renderPreview();
-}
-els.applyPreset.addEventListener('click', ()=>applyPresetKey(els.preset.value));
 
 /* ===================== Manejo archivo ===================== */
 async function handleMain(file){
@@ -547,7 +453,7 @@ async function handleMain(file){
   if(state.kind==='video'){ els.count.value=1; els.count.disabled=true; els.countHelp.style.display='block'; els.videoOpts.style.display='flex'; }
   else { els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; }
 
-  renderPreview(); updateFormatNote(); updateZoomUI();
+  renderPreview(); updateFormatNote();
 }
 
 /* ===================== Load image robusto ===================== */
@@ -579,6 +485,7 @@ const getH = img => img._h || img.naturalHeight || img.height;
 function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
   const R = makeRNG(seed || 'ov');
   const allowStripes = !!options.allowStripes && !els.noFlicker?.checked;
+  const isPreview = !!options.preview;
 
   if (els.optBorder.checked) {
     const size = Math.max(1, Math.round(Math.min(w, h) * (0.002 + 0.0015)));
@@ -644,20 +551,28 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
     for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2);
     ctx.restore();
   }
+
+  // ===== Marca de agua centrada (logo) =====
   if (els.optCenterWM.checked && state.logo) {
-    const m=Math.min(w,h)*0.28;
+    const sizePct = (parseFloat(els.logoSize?.value)||28)/100;      // % del lado menor
+    const baseAlphaPct = (parseFloat(els.logoAlpha?.value)||0.35)/100; // % → [0..1]
+    let alpha = baseAlphaPct * (0.9 + R()*0.4);                     // leve variación
+    if(isPreview && els.logoBoost?.checked) alpha *= 5;             // resalta sólo en preview
+    alpha = Math.min(alpha, 0.2);                                   // seguridad
+
+    const m=Math.min(w,h)*sizePct;
     const r=Math.min(m/Math.max(state.logo.width,state.logo.height),1);
     const lw=state.logo.width*r, lh=state.logo.height*r;
-    ctx.save(); ctx.globalAlpha=0.003+Math.random()*0.0015;
+    ctx.save(); ctx.globalAlpha=alpha;
     ctx.drawImage(state.logo,Math.round((w-lw)/2),Math.round((h-lh)/2),Math.round(lw),Math.round(lh));
     ctx.restore();
   }
 }
-function buildOverlayCanvas(w,h,seed){
+function buildOverlayCanvas(w,h,seed,opts={}){
   const ov=document.createElement('canvas');
   ov.width=Math.max(1,Math.round(w)); ov.height=Math.max(1,Math.round(h));
   const octx=ov.getContext('2d');
-  drawInvisibleStatic(octx, ov.width, ov.height, seed, {allowStripes:false});
+  drawInvisibleStatic(octx, ov.width, ov.height, seed, {allowStripes:false, preview:!!opts.preview});
   if(!els.noFlicker?.checked){
     const R=makeRNG(seed+'|extra');
     drawABExtra(octx, ov.width, ov.height, R, state.logo);
@@ -736,7 +651,7 @@ class VideoPreview {
       const dx=Math.round((box.w-w)/2), dy=Math.round((box.h-h)/2);
       v.style.position='absolute'; v.style.width=w+'px'; v.style.height=h+'px';
       v.style.left=dx+'px'; v.style.top=dy+'px';
-      this.contentRect = {x:dx,y:dy,w,h};
+      this.contentRect = {x:dx,y:dy,w,h}; // ← área visible del video
     }else if(cropRect){
       const f=fit(cropRect.sw,cropRect.sh,maxW,maxH);
       wrap.style.width=f.w+'px'; wrap.style.height=f.h+'px';
@@ -764,7 +679,7 @@ class VideoPreview {
     });
 
     const octx=this.ovStatic.getContext('2d'); octx.clearRect(0,0,rect.w,rect.h);
-    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static');
+    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static',{preview:true});
     octx.drawImage(staticOV,0,0);
     if(els.optInspect.checked) drawGuidesSafe(octx,rect.w,rect.h,makeRNG((seed||'pv')+'|g'));
 
@@ -826,12 +741,11 @@ async function renderPreview(){
       ctx.save(); if(state.mirror){ctx.translate(fitC.w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
       ctx.drawImage(bmp, src.sx,src.sy,src.sw,src.sh, 0,0, fitC.w,fitC.h); ctx.restore(); ctx.filter='none';
 
-      ctx.drawImage(buildOverlayCanvas(fitC.w,fitC.h,seed+'|imgpv'),0,0);
+      ctx.drawImage(buildOverlayCanvas(fitC.w,fitC.h,seed+'|imgpv',{preview:true}),0,0);
       if(els.optInspect.checked) drawGuidesSafe(ctx,fitC.w,fitC.h,R);
     }catch{
       els.preview.innerHTML='<div class="help">No se pudo dibujar la imagen.</div>';
     }
-    updateZoomUI();
     return;
   }
 
@@ -859,7 +773,6 @@ async function renderPreview(){
     subsSize: +els.subsSize.value||24,
     subsBg: !!els.subsBg.checked
   });
-  updateZoomUI();
 }
 
 /* ===================== Exportar ===================== */
@@ -887,13 +800,7 @@ async function doExport(){
         ctx.save(); if(state.mirror){ctx.translate(w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
         ctx.drawImage(bmp,crop.sx,crop.sy,crop.sw,crop.sh,0,0,w,h); ctx.restore(); ctx.filter='none';
         const ov=buildOverlayCanvas(w,h,seedBase+`|imgov|${i}`); ctx.drawImage(ov,0,0);
-
-        const fmt = (els.imgFmt.value||'png').toLowerCase();
-        const q   = clamp((+els.imgQ.value||95)/100, 0.6, 1.0);
-        const blob = await canvasToTypedBlob(c, fmt, q);
-        const ext = fmt==='jpeg'?'jpg':fmt;
-        zip.file(`${base}_img_${i}.${ext}`, blob, {binary:true});
-
+        const blob=await new Promise(r=>c.toBlob(r,'image/png',0.95)); zip.file(`${base}_img_${i}.png`,blob,{binary:true});
         job.pct(i*(100/N)); setProgress((i/N)*100*0.9); if(state.abort) break;
       }
       job.done();
@@ -918,7 +825,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS — Pro',
-        version:'v42-zoom-brand',
+        version:'v39-logo-controls-overlay-aligned',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
@@ -927,8 +834,8 @@ async function doExport(){
         hq:!!els.hqQuality?.checked,
         selection: els.format?.value || 'both',
         mp4_supported: MediaRecorder.isTypeSupported('video/mp4;codecs=h264'),
-        image_format: els.imgFmt?.value || 'png',
-        image_quality: +els.imgQ?.value || 95
+        logo_size_pct:+(els.logoSize?.value||28),
+        logo_alpha_pct:+(els.logoAlpha?.value||0.35)
       },null,2));
       const zipBlob=await zip.generateAsync({type:'blob'}); download(zipBlob,`${base}.zip`);
     }
@@ -940,6 +847,7 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   const R=makeRNG(seedBase+`|vid|${t.label}|${idx}`);
   const targetAR=getPreferredAspect(info.width,info.height,R);
 
+  // Dimensiones de salida y del área visible (para letterbox)
   let crop={sx:0,sy:0,sw:info.width,sh:info.height};
   let outW, outH, viewW, viewH, dx=0, dy=0;
 
@@ -998,7 +906,6 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
       ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
       ctx.drawImage(v,0,0,info.width,info.height, dx,dy, viewW,viewH);
       ctx.restore(); ctx.filter='none';
-
       ctx.drawImage(overlayStatic, dx, dy);
       ctx.save(); ctx.translate(dx,dy);
       drawInvisibleDynamic(ctx, viewW, viewH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
@@ -1146,49 +1053,13 @@ function computeCrop(ow,oh,ratio,R){ const w=Math.min(ow,Math.round(oh*ratio)); 
 function fit(w,h,maxW,maxH){ const r=Math.min(maxW/w,maxH/h,1); return {w:Math.round(w*r),h:Math.round(h*r)}; }
 function boxForAspect(ar, maxW, maxH){ const boxAR = maxW/maxH; if(ar>=boxAR){ const w=Math.min(maxW, Math.round(maxH*ar)); return {w, h:Math.round(w/ar)}; } const h=Math.min(maxH, Math.round(maxW/ar)); return {w:Math.round(h*ar), h}; }
 function makeEven(n){ n = Math.max(2, Math.round(n)); return n % 2 ? n-1 : n; }
-function download(blob, name){
-  const makeURL = () => URL.createObjectURL(blob);
-  const isIOS = /iPad|iPhone|iPod/i.test(navigator.userAgent);
-  const isStandaloneSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-  try{
-    const url = makeURL();
-    if(isIOS || isStandaloneSafari){
-      const w = window.open(url, '_blank');
-      if(!w) alert('Habilita pop-ups para guardar el archivo.');
-      setTimeout(()=>URL.revokeObjectURL(url), 60000);
-      return;
-    }
-    const a = document.createElement('a');
-    a.href = url; a.download = name; a.rel = 'noopener';
-    document.body.appendChild(a); a.click();
-    setTimeout(()=>{ document.body.removeChild(a); URL.revokeObjectURL(url); }, 200);
-  }catch(e){
-    const url = makeURL(); window.open(url, '_blank');
-    setTimeout(()=>URL.revokeObjectURL(url), 60000);
-  }
-}
+function download(blob,name){ const a=document.createElement('a'); const u=URL.createObjectURL(blob); a.href=u; a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1200); }
 function videoMeta(u){ return new Promise((res,rej)=>{ const v=document.createElement('video'); v.src=u; v.onloadedmetadata=()=>res({width:v.videoWidth,height:v.videoHeight,duration:v.duration}); v.onerror=rej; }); }
 function genSeed(){ const d=new Date(); return `ads-${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}-${Math.random().toString(16).slice(2,6)}`; }
 function makeRNG(seed){ const r=mul32(hash32(seed||'seed')); const fn=()=>r(); fn.int=(a,b)=>Math.floor(r()*(b-a+1))+a; return fn; }
 function hash32(s){ let h=2166136261>>>0; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619);} return h>>>0; }
-function mul32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|a)^t; return ((t^t>>>14)>>>0)/4294967296; } }
+function mul32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; } }
 function clamp(v,min,max){ return Math.max(min,Math.min(max,v)); }
-
-/* ========= Imagen: helpers de blob tipado ========= */
-async function canvasToTypedBlob(canvas, fmt='png', quality=0.95){
-  fmt = (fmt||'png').toLowerCase();
-  const mime = fmt==='png' ? 'image/png' : (fmt==='jpeg'?'image/jpeg':'image/webp');
-  const q    = fmt==='png' ? undefined : quality;
-  return await new Promise(resolve=>{
-    canvas.toBlob(b=>{
-      if(b){ resolve(b); }
-      else{
-        const dataURL = canvas.toDataURL(mime, q);
-        fetch(dataURL).then(r=>r.blob()).then(resolve);
-      }
-    }, mime, q);
-  });
-}
 
 /* ===================== Targets por selección (formatos) ===================== */
 function getTargetsBySelection(){
@@ -1206,10 +1077,10 @@ function getTargetsBySelection(){
     if(mp4OK)  list.push({label:'mp4',mime:mp4});
   }else if(want==='mp4'){
     if(mp4OK) list.push({label:'mp4',mime:mp4});
-    else if(webmOK) list.push({label:'webm',mime:webm});
+    else if(webmOK) list.push({label:'webm',mime:webm}); // fallback
   }else if(want==='webm'){
     if(webmOK) list.push({label:'webm',mime:webm});
-    else if(mp4OK) list.push({label:'mp4',mime:mp4});
+    else if(mp4OK) list.push({label:'mp4',mime:mp4});   // fallback
   }
   return list.length?list:[{label:'webm',mime:'video/webm'}];
 }
