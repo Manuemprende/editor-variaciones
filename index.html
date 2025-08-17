@@ -38,26 +38,19 @@ body::before{
 @keyframes scan{0%{transform:translateY(-12px)}100%{transform:translateY(16px)}}
 
 .app{
-  width:100%; max-width:1424px; margin:34px auto; padding:32px;
+  width:100%; max-width:1424px; margin:24px auto 34px; padding:24px 28px;
   background:linear-gradient(180deg,rgba(13,21,38,.7),rgba(10,16,32,.65));
   border:1px solid rgba(102,163,255,.16); border-radius:24px; box-shadow:var(--shadow);
   backdrop-filter: blur(8px) saturate(110%);
 }
 .header{display:flex;flex-direction:column;align-items:center;gap:6px;margin-bottom:10px}
-h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;text-align:center}
+h1{margin:0;font-size:32px;line-height:1.12;font-weight:900;letter-spacing:.3px;text-align:center}
 .sub{color:var(--muted);font-size:14.5px;text-align:center}
 .desc{margin-top:8px;color:#bcd0f2;font-size:13.5px;text-align:center}
+.credits{margin-top:8px;font-weight:700;color:#93b6ff;background:linear-gradient(90deg,#22407a,#1e335f);
+  padding:8px 12px;border:1px solid #2a4b8c;border-radius:12px}
 
-.credits{
-  margin-top:10px; display:flex; gap:10px; align-items:center; color:#9fc0ff; font-weight:700;
-}
-.badge{
-  display:inline-block; padding:6px 10px; border-radius:999px;
-  background:linear-gradient(180deg,#132449,#0c1731); border:1px solid #264a88; color:#cfe1ff;
-  font-size:12.5px; letter-spacing:.2px;
-}
-
-/* ===== Layout ancho ===== */
+/* ===== Layout ===== */
 .grid{display:grid;grid-template-columns:1.25fr .95fr;gap:28px;margin-top:16px}
 .left-col{position:sticky;top:22px;align-self:start}
 @media (max-width:1160px){.grid{grid-template-columns:1fr}.left-col{position:static}}
@@ -78,7 +71,7 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;
 
 .hidden{display:none!important}.visually-hidden{position:absolute!important;width:1px;height:1px;clip-path:inset(50%)}
 
-/* ===== Vista previa ===== */
+/* ===== Vista previa + Zoom/Pan ===== */
 .preview{
   position:relative; border-radius:16px; background:linear-gradient(180deg,#0b1426,#0a1224);
   padding:16px; min-height:420px; display:flex; align-items:center; justify-content:center; overflow:hidden;
@@ -88,11 +81,17 @@ h1{margin:0;font-size:34px;line-height:1.12;font-weight:900;letter-spacing:.3px;
   content:""; position:absolute; inset:0; border-radius:16px; pointer-events:none;
   box-shadow:0 0 0 1px rgba(124,242,255,.2), 0 0 40px rgba(124,242,255,.05) inset;
 }
+.pv-wrap{position:relative; display:inline-block; contain:paint; will-change:transform,opacity;}
+.pv-wrap video{position:relative; z-index:1;}
+/* Las capas de overlay van por encima SIEMPRE */
+.overlay{
+  position:absolute; left:0; top:0; pointer-events:none;
+  z-index:5;
+}
 video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rendering:crisp-edges}
-.overlay{position:absolute; left:0; top:0; pointer-events:none}
-.pv-wrap{position:relative;display:inline-block;contain:paint;will-change:transform,opacity}
-.pv-wrap.grab{cursor:grab}
-.pv-wrap.grab:active{cursor:grabbing}
+
+.zoombar{display:flex;align-items:center;gap:10px;margin:10px 0 4px}
+.zoombar .num{min-width:48px;text-align:right;font-variant-numeric:tabular-nums;}
 
 /* ===== Controles ===== */
 .field{
@@ -117,26 +116,22 @@ video,canvas{max-width:100%;max-height:var(--pvH);border-radius:12px;image-rende
 input[type="text"],input[type="number"],select,textarea{
   background:#0c1834;border:1px solid #223a6b;color:#e9f0ff;padding:10px 12px;border-radius:10px;outline:none
 }
+input[type="range"]{accent-color:#3d78ff}
 textarea{min-height:110px;width:100%}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .chips{display:flex;gap:8px;flex-wrap:wrap}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1px solid #223a6b;padding:6px 10px;border-radius:999px;font-size:12.5px}
 .hr{height:1px;background:#1c2c55;margin:8px 0 2px}
 
-/* Range + value (para que NO salte el layout) */
-.range{
-  display:grid; grid-template-columns: 1fr 64px; align-items:center; gap:12px; width:100%;
-}
-.range .value{
-  text-align:right; font-variant-numeric: tabular-nums; min-width: 64px; /* ancho fijo */
-  color:#cfe1ff; opacity:.9;
-}
-
 /* Jobs */
 .jobs{margin-top:10px;display:flex;flex-direction:column;gap:10px}
 .job{background:#0b162e;border:1px solid #21345e;border-radius:12px;padding:10px 12px}
 .job .title{font-size:12.5px;color:#cfe0ff;margin-bottom:6px}
 .job .progress{margin-top:6px}
+
+/* slider label fijo para evitar “saltos” */
+.value-inline{display:inline-flex;align-items:center;gap:8px}
+.value-inline .num{display:inline-block;min-width:54px;text-align:right;font-variant-numeric:tabular-nums}
 </style>
 </head>
 <body>
@@ -145,9 +140,7 @@ textarea{min-height:110px;width:100%}
     <h1>Editor de Singularidad para ADS</h1>
     <div class="sub">Variaciones <b>invisibles</b> + A/B sutil. PNG y MP4/WebM en tu navegador.</div>
     <div class="desc">Propósito: reducir la repetición entre anuncios (no evadir revisiones).</div>
-    <div class="credits">
-      <span class="badge">Creador: Manu.EmprendeHoy &amp; DropDrop</span>
-    </div>
+    <div class="credits">Creador: Manu.EmprendeHoy &amp; DropDrop</div>
   </div>
 
   <div class="grid">
@@ -166,17 +159,15 @@ textarea{min-height:110px;width:100%}
         <button id="changeBtn" class="btn" type="button">Cambiar archivo</button>
       </div>
 
-      <div id="preview" class="preview"><div class="help">Tu vista previa aparecerá aquí</div></div>
-
-      <div class="field" style="flex-direction:column;align-items:flex-start">
-        <b>Zoom y paneo (preview)</b>
-        <div class="range">
-          <input id="zoomPV" type="range" min="50" max="200" step="1" value="100"/>
-          <div id="zoomPVVal" class="value">100%</div>
-        </div>
-        <label class="row"><input id="zoomExport" type="checkbox"/> Aplicar este zoom/pan en la exportación</label>
-        <div class="help">Arrastra sobre el video para mover cuando el zoom &gt; 100%.</div>
+      <div class="zoombar">
+        <b>Zoom</b>
+        <input id="zoomRange" type="range" min="100" max="200" value="100" style="width:180px"/>
+        <span id="zoomVal" class="num">100%</span>
+        <button id="zoomFit" class="btn" type="button">Ajustar</button>
       </div>
+
+      <div id="preview" class="preview"><div class="help">Tu vista previa aparecerá aquí</div></div>
+      <div class="help">Arrastra para desplazar (pan). El zoom/posicionamiento solo afecta la <b>preview</b> — no se exporta.</div>
 
       <div class="toolbar">
         <button id="mirrorBtn" class="btn" disabled type="button">Espejo ↔</button>
@@ -355,22 +346,25 @@ textarea{min-height:110px;width:100%}
       <!-- LOGO -->
       <div class="field" style="flex-direction:column;align-items:flex-start">
         <div class="help" style="margin-bottom:8px">Logo (PNG/JPG) para marca de agua centrada y “logo en esquina”.</div>
-        <div id="dropLogo" class="drop-mini" tabindex="0" role="button"><b>Arrastra tu logo</b> o haz clic</div>
+        <div id="dropLogo" class="drop-mini" tabindex="0" role="button"><b>Arrastra tu logo</b> haz clic</div>
         <input id="logoFile" class="visually-hidden" type="file" accept="image/png,image/jpeg"/>
         <div id="logoInfo" class="filename hidden"></div>
 
-        <div class="range" style="margin-top:10px">
-          <label class="help" style="justify-self:start">Tamaño</label>
-          <input id="logoSize" type="range" min="10" max="120" value="60" step="1" />
-          <div id="logoSizeVal" class="value">60%</div>
+        <div class="row" style="width:100%;margin-top:12px">
+          <div class="value-inline">
+            <b>Tamaño</b>
+            <input id="logoSize" type="range" min="20" max="100" value="60" style="width:220px"/>
+            <span id="logoSizeVal" class="num">60%</span>
+          </div>
         </div>
-        <div class="range">
-          <label class="help" style="justify-self:start">Opacidad</label>
-          <input id="logoOpacity" type="range" min="0" max="100" step="0.1" value="25"/>
-          <div id="logoOpacityVal" class="value">25.0%</div>
+        <div class="row" style="width:100%">
+          <div class="value-inline">
+            <b>Opacidad</b>
+            <input id="logoOpacity" type="range" min="1" max="100" value="3" style="width:220px"/>
+            <span id="logoOpacityVal" class="num">3%</span>
+          </div>
+          <label class="row"><input id="logoHighlight" type="checkbox"/> Resaltar en preview</label>
         </div>
-        <label class="row"><input id="logoEmph" type="checkbox"/> Resaltar en preview</label>
-
         <div class="row" style="margin-top:6px"><button id="clearLogo" class="btn" type="button">Quitar logo</button></div>
       </div>
 
@@ -385,25 +379,29 @@ textarea{min-height:110px;width:100%}
 const els={
   drop:$('drop'),file:$('file'),fileInfo:$('fileInfo'),fileName:$('fileName'),changeBtn:$('changeBtn'),
   preview:$('preview'),mirrorBtn:$('mirrorBtn'),clearBtn:$('clearBtn'),
+  zoomRange:$('zoomRange'),zoomVal:$('zoomVal'),zoomFit:$('zoomFit'),
   count:$('count'),countHelp:$('countHelp'),zipname:$('zipname'),
   seed:$('seed'),seedRnd:$('seedRnd'),downloadBtn:$('downloadBtn'),cancelBtn:$('cancelBtn'),bar:$('bar'),jobs:$('jobs'),
   optBorder:$('optBorder'),optBorderMulti:$('optBorderMulti'),optShapes:$('optShapes'),optStripes:$('optStripes'),optCenterWM:$('optCenterWM'),optInspect:$('optInspect'),
   dropLogo:$('dropLogo'),logoFile:$('logoFile'),logoInfo:$('logoInfo'),clearLogo:$('clearLogo'),
-  logoSize:$('logoSize'),logoSizeVal:$('logoSizeVal'),logoOpacity:$('logoOpacity'),logoOpacityVal:$('logoOpacityVal'),logoEmph:$('logoEmph'),
+  logoSize:$('logoSize'),logoOpacity:$('logoOpacity'),logoHighlight:$('logoHighlight'),
+  logoSizeVal:$('logoSizeVal'),logoOpacityVal:$('logoOpacityVal'),
   videoOpts:$('videoOpts'),durFull:$('durFull'),durClip:$('durClip'),sec:$('sec'),randStart:$('randStart'),segments:$('segments'),
   format:$('format'),hqQuality:$('hqQuality'),noCrop:$('noCrop'),keepRes:$('keepRes'),vidCount:$('vidCount'),letterbox:$('letterbox'),
-  abEnable:$('abEnable'),abPreview:$('abPreview'),abIntensity:$('abIntensity'),arOrig:$('arOrig'),ar11:$('ar11'),ar45:$('ar45'),ar916:$('ar916'),ar169:$('ar169'), arPref:$('arPref'),
+  abEnable:$('abEnable'),abPreview:$('abPreview'),abIntensity:$('abIntensity'),arOrig:$('arOrig'),ar11:$('ar11'),ar45:$('ar45'),ar916:$('ar916'),ar169:$('ar169'),
+  arPref:$('arPref'),
   abExtra:$('abExtra'),abExtraRandom:$('abExtraRandom'), perfLite:$('perfLite'), noFlicker:$('noFlicker'),
   subsEnable:$('subsEnable'),subsBox:$('subsBox'),subsLoad:$('subsLoad'),subsFile:$('subsFile'),subsPaste:$('subsPaste'),subsText:$('subsText'),subsClear:$('subsClear'),
   subsAuto:$('subsAuto'),subsDur:$('subsDur'),subsSize:$('subsSize'),subsBg:$('subsBg'),
-  zoomPV:$('zoomPV'), zoomPVVal:$('zoomPVVal'), zoomExport:$('zoomExport'),
   formatNote:$('formatNote'),bothNote:$('bothNote')
 };
 
 const MAX_VIDEO=15*1024*1024;
-const state={file:null,kind:null,url:null,logo:null,mirror:false,abort:false,previewSeed:null,
-             pv:{controller:null,cleanup:()=>{}},subs:[],
-             logo:{size:0.60, opacity:0.25, emph:false}};
+const state={
+  file:null,kind:null,url:null,logo:null,mirror:false,abort:false,previewSeed:null,
+  pv:{controller:null,cleanup:()=>{}},subs:[],
+  zoom:1, panX:0, panY:0
+};
 
 /* ===================== helpers ===================== */
 const throttle=(fn,ms)=>{let t=0;return(...a)=>{const n=performance.now();if(n-t>=ms){t=n;fn(...a);}}};
@@ -412,12 +410,40 @@ function setProgress(p){ els.bar.style.width=Math.max(0,Math.min(100,p))+'%'; }
 function clearAll(){
   if(state.url) URL.revokeObjectURL(state.url);
   if(state.pv.controller) state.pv.controller.destroy();
-  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,previewSeed:null,subs:[],pv:{controller:null,cleanup:()=>{}}, logo:state.logo});
+  Object.assign(state,{file:null,kind:null,url:null,mirror:false,abort:false,previewSeed:null,subs:[],pv:{controller:null,cleanup:()=>{}}, zoom:1, panX:0, panY:0});
   els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>';
   els.mirrorBtn.textContent='Espejo ↔'; els.fileInfo.classList.add('hidden'); els.drop.classList.remove('hidden');
   els.count.disabled=false; els.countHelp.style.display='none'; els.videoOpts.style.display='none'; setEnabled(false);
-  els.jobs.innerHTML=''; setProgress(0);
+  els.jobs.innerHTML=''; setProgress(0); els.zoomRange.value=100; els.zoomVal.textContent='100%';
 }
+
+/* ========= Zoom y pan (preview) ========= */
+function applyZoomPan(){
+  const wrap = els.preview.querySelector('.pv-wrap');
+  if(!wrap) return;
+  wrap.style.transform = `translate(${state.panX}px,${state.panY}px) scale(${state.zoom})`;
+}
+els.zoomRange.addEventListener('input',()=>{
+  state.zoom = (+els.zoomRange.value)/100;
+  els.zoomVal.textContent = els.zoomRange.value+'%';
+  applyZoomPan();
+});
+els.zoomFit.addEventListener('click', ()=>{
+  state.zoom=1; state.panX=0; state.panY=0; els.zoomRange.value=100; els.zoomVal.textContent='100%'; applyZoomPan();
+});
+(function enablePan(){
+  let drag=false, sx=0, sy=0, ox=0, oy=0;
+  els.preview.addEventListener('pointerdown',e=>{
+    const wrap = els.preview.querySelector('.pv-wrap');
+    if(!wrap) return;
+    drag=true; sx=e.clientX; sy=e.clientY; ox=state.panX; oy=state.panY; wrap.setPointerCapture(e.pointerId);
+  });
+  els.preview.addEventListener('pointermove',e=>{
+    if(!drag) return; state.panX = ox + (e.clientX - sx); state.panY = oy + (e.clientY - sy); applyZoomPan();
+  });
+  els.preview.addEventListener('pointerup',()=>{drag=false;});
+  els.preview.addEventListener('pointercancel',()=>{drag=false;});
+})();
 
 /* ===================== Drop/File ===================== */
 els.drop.addEventListener('click',()=>{ els.file.value=''; els.file.click(); });
@@ -439,18 +465,9 @@ els.logoFile.addEventListener('change',e=>{
   img.src=u;
 });
 els.clearLogo.addEventListener('click',()=>{ state.logo=null; els.logoInfo.classList.add('hidden'); els.logoFile.value=''; renderPreview(); });
-
-function updateLogoSliders(){
-  state.logo.size = (+els.logoSize.value)/100;
-  state.logo.opacity = (+els.logoOpacity.value)/100;
-  state.logo.emph = !!els.logoEmph.checked;
-  els.logoSizeVal.textContent = Math.round(+els.logoSize.value) + '%';
-  els.logoOpacityVal.textContent = (+els.logoOpacity.value).toFixed(2)+'%';
-  renderPreview();
-}
-els.logoSize.addEventListener('input', updateLogoSliders);
-els.logoOpacity.addEventListener('input', updateLogoSliders);
-els.logoEmph.addEventListener('change', updateLogoSliders);
+els.logoSize.addEventListener('input',()=>{ els.logoSizeVal.textContent = els.logoSize.value+'%'; renderPreview();});
+els.logoOpacity.addEventListener('input',()=>{ els.logoOpacityVal.textContent = els.logoOpacity.value+'%'; renderPreview();});
+els.logoHighlight.addEventListener('change',renderPreview);
 
 /* ===================== Subtítulos ===================== */
 els.subsEnable.addEventListener('change',()=>{ els.subsBox.classList.toggle('hidden',!els.subsEnable.checked); renderPreview(); });
@@ -465,9 +482,8 @@ els.subsClear.addEventListener('click',()=>{ state.subs=[]; els.subsText.value='
  'abEnable','abPreview','abIntensity','arOrig','ar11','ar45','ar916','ar169','arPref','abExtra','abExtraRandom',
  'optBorder','optBorderMulti','optShapes','optStripes','optCenterWM','optInspect',
  'durFull','durClip','sec','randStart','segments','format','letterbox',
- 'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes',
- 'zoomPV','zoomExport'
-].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.(('zoomPV'===id)?'input':'change',renderPreview); });
+ 'subsEnable','subsAuto','subsDur','subsSize','subsBg','perfLite','noFlicker','hqQuality','noCrop','keepRes','logoHighlight'
+].forEach(id=>{ (document.getElementById(id)||{}).addEventListener?.('change',renderPreview); });
 
 els.seedRnd.addEventListener('click',()=>{ els.seed.value=genSeed(); renderPreview(); });
 els.seed.addEventListener('input', renderPreview);
@@ -517,18 +533,6 @@ async function loadBitmap(file){
 }
 const getW = img => img._w || img.naturalWidth || img.width;
 const getH = img => img._h || img.naturalHeight || img.height;
-
-/* ===================== Logo render helper ===================== */
-function drawCenteredLogo(ctx, w, h, logo, sizeRatio, opacity, emphPreview=false){
-  if(!logo) return;
-  const m=Math.min(w,h)*Math.max(0.06, Math.min(1,sizeRatio||0.6)); // control por slider
-  const r=Math.min(m/Math.max(logo.width,logo.height),1);
-  const lw=logo.width*r, lh=logo.height*r;
-  ctx.save();
-  ctx.globalAlpha=Math.max(0,Math.min(1, opacity || 0.25)) * (emphPreview? 1.6 : 1);
-  ctx.drawImage(logo,Math.round((w-lw)/2),Math.round((h-lh)/2),Math.round(lw),Math.round(lh));
-  ctx.restore();
-}
 
 /* ===================== Overlays invisibles ===================== */
 function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
@@ -599,6 +603,33 @@ function drawInvisibleStatic(ctx, w, h, seed, options = {}) {
     for(let x=-len;x<=len;x+=gap) ctx.fillRect(x,-len,sw,len*2);
     ctx.restore();
   }
+
+  // Logo centrado (controlado)
+  if (els.optCenterWM.checked && state.logo) {
+    const pct = (+els.logoSize.value||60)/100;           // tamaño relativo
+    const maxSide = Math.min(w,h) * pct;
+    const r = Math.min(maxSide/Math.max(state.logo.width,state.logo.height),1);
+    const lw=Math.round(state.logo.width*r), lh=Math.round(state.logo.height*r);
+    // Opacidad controlada: 1–100% mapeado a 0.005–0.15, con opción de resaltar en preview
+    const base = clamp((+els.logoOpacity.value||3)/100, 0.01, 1); // 0.01..1
+    let alpha = 0.005 + base*0.14; // 0.005..0.145
+    if(options.forPreview && els.logoHighlight.checked) alpha = Math.min(0.35, alpha*4);
+
+    ctx.save(); ctx.globalAlpha=alpha;
+    ctx.drawImage(state.logo,Math.round((w-lw)/2),Math.round((h-lh)/2),lw,lh);
+    ctx.restore();
+  }
+}
+function buildOverlayCanvas(w,h,seed,opt){
+  const ov=document.createElement('canvas');
+  ov.width=Math.max(1,Math.round(w)); ov.height=Math.max(1,Math.round(h));
+  const octx=ov.getContext('2d');
+  drawInvisibleStatic(octx, ov.width, ov.height, seed, {...(opt||{}), allowStripes:false});
+  if(!els.noFlicker?.checked){
+    const R=makeRNG(seed+'|extra');
+    drawABExtra(octx, ov.width, ov.height, R, state.logo);
+  }
+  return ov;
 }
 
 /* ==== Franjas dinámicas ==== */
@@ -636,11 +667,11 @@ function drawInvisibleDynamic(ctx, w, h, seed, t) {
   ctx.restore();
 }
 
-/* ===================== PREVIEW: con zoom y pan ===================== */
+/* ===================== PREVIEW: sin pestañazo + overlay al área visible ===================== */
 class VideoPreview {
   constructor(root){
     this.root = root;
-    this.wrap = document.createElement('div'); this.wrap.className='pv-wrap grab'; root.innerHTML=''; root.appendChild(this.wrap);
+    this.wrap = document.createElement('div'); this.wrap.className='pv-wrap'; root.innerHTML=''; root.appendChild(this.wrap);
     this.video = document.createElement('video'); this.video.controls=true; this.video.muted=true; this.video.playsInline=true; this.wrap.appendChild(this.video);
     this.ovStatic = document.createElement('canvas'); this.ovStatic.className='overlay'; this.wrap.appendChild(this.ovStatic);
     this.ovDyn = document.createElement('canvas'); this.ovDyn.className='overlay'; this.wrap.appendChild(this.ovDyn);
@@ -648,45 +679,18 @@ class VideoPreview {
     this.ro.observe(this.wrap);
     this.opts = {};
     this.contentRect = {x:0,y:0,w:0,h:0};
-    this.panX = 0; this.panY = 0;
-
-    // drag para paneo
-    this.pointerId = null;
-    this.wrap.addEventListener('pointerdown', e=>{
-      if((this.opts.zoom||1) <= 1) return;
-      this.pointerId = e.pointerId;
-      this.wrap.setPointerCapture(this.pointerId);
-      this.baseX = this.panX; this.baseY = this.panY;
-      this.startX = e.clientX; this.startY = e.clientY;
-    });
-    this.wrap.addEventListener('pointermove', e=>{
-      if(this.pointerId==null) return;
-      const dx = e.clientX - this.startX;
-      const dy = e.clientY - this.startY;
-      const z = Math.max(1, this.opts.zoom||1);
-      const maxX = (this.contentRect.w*(z-1))/2;
-      const maxY = (this.contentRect.h*(z-1))/2;
-      this.panX = clamp(this.baseX + dx, -maxX, maxX);
-      this.panY = clamp(this.baseY + dy, -maxY, maxY);
-      this.applyTransforms();
-    });
-    const up = ()=>{ if(this.pointerId!=null){ try{this.wrap.releasePointerCapture(this.pointerId);}catch{} this.pointerId=null; } };
-    this.wrap.addEventListener('pointerup', up);
-    this.wrap.addEventListener('pointercancel', up);
+    // aplicar transformaciones actuales (zoom/pan)
+    applyZoomPan();
   }
   async load(src){
     if(this.video.src!==src){ this.video.src=src; await new Promise((res,rej)=>{ this.video.onloadedmetadata=res; this.video.onerror=rej; }); }
     if(this.video.paused) try{ await this.video.play(); }catch{}
   }
-  setOptions(opts){
-    this.opts={...opts};
-    // reset pan si bajaste zoom
-    if((this.opts.zoom||1) <= 1){ this.panX=0; this.panY=0; }
-    this.applyStyles(); this.rebuild();
-  }
+  setOptions(opts){ this.opts={...opts}; this.applyStyles(); this.rebuild(); }
   applyStyles(){
     const {mirror, showAB, filter, letterbox, cropRect, sourceWH, arTarget} = this.opts;
     const v = this.video; const wrap=this.wrap;
+    v.style.transform = (mirror?'scaleX(-1) ':'')+'translateZ(0)';
     v.style.filter = showAB?filter:'none';
     wrap.style.overflow='hidden';
 
@@ -702,7 +706,7 @@ class VideoPreview {
       v.style.position='absolute'; v.style.width=w+'px'; v.style.height=h+'px';
       v.style.left=dx+'px'; v.style.top=dy+'px';
       this.contentRect = {x:dx,y:dy,w,h};
-    }else if(this.opts.cropRect){
+    }else if(cropRect){
       const f=fit(cropRect.sw,cropRect.sh,maxW,maxH);
       wrap.style.width=f.w+'px'; wrap.style.height=f.h+'px';
       const s=Math.min(f.w/cropRect.sw, f.h/cropRect.sh);
@@ -716,49 +720,23 @@ class VideoPreview {
       const f=fit(vw,vh,maxW,maxH);
       this.contentRect = {x:0,y:0,w:f.w,h:f.h};
     }
-
-    v.style.transformOrigin='center center';
-    v.style.transform=(mirror?'scaleX(-1) ':'')+'translateZ(0)';
-
-    this.applyTransforms();
-  }
-  applyTransforms(){
-    const z = Math.max(1, this.opts.zoom||1);
-    const tx = Math.round(this.panX||0);
-    const ty = Math.round(this.panY||0);
-    const t = `translate(${tx}px,${ty}px) scale(${z})`;
-    this.video.style.transform += ' ' + t;
-
-    [this.ovStatic,this.ovDyn].forEach(el=>{
-      el.style.transformOrigin='center center';
-      el.style.transform = `translate(${this.contentRect.x}px,${this.contentRect.y}px) translate(${tx}px,${ty}px) scale(${z})`;
-    });
   }
   rebuild(){
     const {seed, subsOn, subs, subsSize, subsBg} = this.opts;
     const rect=this.contentRect;
     if(rect.w<=0||rect.h<=0){ return; }
 
-    // dimensionar lienzos igual al área visible (antes de transform)
     [this.ovStatic,this.ovDyn].forEach(ov=>{
       ov.width=rect.w; ov.height=rect.h;
       ov.style.width=rect.w+'px'; ov.style.height=rect.h+'px';
-      ov.style.left='0px'; ov.style.top='0px';
+      ov.style.left=rect.x+'px'; ov.style.top=rect.y+'px';
     });
 
-    // Static overlay
     const octx=this.ovStatic.getContext('2d'); octx.clearRect(0,0,rect.w,rect.h);
-    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static');
+    const staticOV = buildOverlayCanvas(rect.w,rect.h,(seed||'pv')+'|static',{forPreview:true});
     octx.drawImage(staticOV,0,0);
-
-    // Logo centrado en preview
-    if(state.logo){
-      drawCenteredLogo(octx, rect.w, rect.h, state.logo, state.logo.size, state.logo.opacity, state.logo.emph);
-    }
-
     if(els.optInspect.checked) drawGuidesSafe(octx,rect.w,rect.h,makeRNG((seed||'pv')+'|g'));
 
-    // Dynamic loop
     const dctx=this.ovDyn.getContext('2d');
     const tick=()=>{
       if(!this.video || this.video.ended) return;
@@ -776,7 +754,6 @@ class VideoPreview {
       this.video.addEventListener('timeupdate', this.onTime);
     }
   }
-  getPan(){ return {x:this.panX,y:this.panY, w:this.contentRect.w, h:this.contentRect.h}; }
   destroy(){
     try{ this.video.pause(); }catch{}
     if(this.raf) cancelAnimationFrame(this.raf);
@@ -785,18 +762,25 @@ class VideoPreview {
   }
 }
 
-function drawGuidesSafe(ctx,w,h,R){ try{ if(!ctx||!w||!h||w<=1||h<=1) return; drawGuides(ctx,w,h,R); }catch(e){} }
+function drawGuidesSafe(ctx,w,h,R){
+  try{
+    if(!ctx||!w||!h||w<=1||h<=1) return;
+    drawGuides(ctx,w,h,R);
+  }catch(e){ console.warn('Guías desactivadas:',e); }
+}
 
 async function renderPreview(){
-  els.zoomPVVal.textContent = Math.round(+els.zoomPV.value) + '%';
-
   if(!state.file){ els.preview.innerHTML='<div class="help">Tu vista previa aparecerá aquí</div>'; return; }
   const seed=(els.seed.value||'').trim() || state.previewSeed;
   const R=makeRNG(seed);
 
+  // reset zoom transform target
+  state.panX=state.panX||0; state.panY=state.panY||0; applyZoomPan();
+
   if(state.kind==='image'){
     els.preview.innerHTML='';
-    const c=document.createElement('canvas'); els.preview.appendChild(c);
+    const wrap = document.createElement('div'); wrap.className='pv-wrap'; els.preview.appendChild(wrap);
+    const c=document.createElement('canvas'); wrap.appendChild(c);
     try{
       const bmp=await loadBitmap(state.file);
       const showAB=els.abPreview.checked && els.abEnable.checked;
@@ -812,27 +796,13 @@ async function renderPreview(){
       c.style.width=fitC.w+'px'; c.style.height=fitC.h+'px';
       const ctx=c.getContext('2d'); ctx.scale(dpr,dpr); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
 
-      // zoom preview imagen
-      const z = (+els.zoomPV.value)/100;
-      const vw = fitC.w, vh = fitC.h;
-      const dx = Math.round(-(vw*(z-1))/2), dy = Math.round(-(vh*(z-1))/2);
+      ctx.save(); if(state.mirror){ctx.translate(fitC.w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
+      ctx.drawImage(bmp, src.sx,src.sy,src.sw,src.sh, 0,0, fitC.w,fitC.h); ctx.restore(); ctx.filter='none';
 
-      ctx.save();
-      if(state.mirror){ctx.translate(vw,0);ctx.scale(-1,1);}
-      if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
-      // dibuja escalado (clipa por canvas)
-      ctx.drawImage(bmp, src.sx,src.sy,src.sw,src.sh, dx,dy, Math.round(vw*z), Math.round(vh*z));
-      ctx.restore(); ctx.filter='none';
-
-      const ov=buildOverlayCanvas(fitC.w,fitC.h,seed+'|imgpv');
-      ctx.drawImage(ov,0,0);
-
-      // logo preview
-      if(state.logo){
-        drawCenteredLogo(ctx, fitC.w, fitC.h, state.logo, state.logo.size, state.logo.opacity, state.logo.emph);
-      }
-
+      ctx.drawImage(buildOverlayCanvas(fitC.w,fitC.h,seed+'|imgpv',{forPreview:true}),0,0);
       if(els.optInspect.checked) drawGuidesSafe(ctx,fitC.w,fitC.h,R);
+
+      applyZoomPan();
     }catch{
       els.preview.innerHTML='<div class="help">No se pudo dibujar la imagen.</div>';
     }
@@ -862,9 +832,10 @@ async function renderPreview(){
     subsOn: els.subsEnable.checked,
     subs: state.subs,
     subsSize: +els.subsSize.value||24,
-    subsBg: !!els.subsBg.checked,
-    zoom: (+els.zoomPV.value)/100
+    subsBg: !!els.subsBg.checked
   });
+
+  applyZoomPan();
 }
 
 /* ===================== Exportar ===================== */
@@ -887,23 +858,11 @@ async function doExport(){
         const R=makeRNG(seedBase+`|img|${i}`); const showAB=els.abEnable.checked;
         let ow=getW(bmp), oh=getH(bmp); let crop={sx:0,sy:0,sw:ow,sh:oh};
         if(showAB && !els.noCrop.checked){ const ratio=getPreferredAspect(ow,oh,R); crop=computeCrop(ow,oh,ratio,R); }
-        let w=crop.sw, h=crop.sh;
-
-        // aplicar zoom export si corresponde
-        const applyZoom = els.zoomExport.checked;
-        const ez = applyZoom ? (+els.zoomPV.value)/100 : 1;
-
+        const w=crop.sw, h=crop.sh;
         const c=document.createElement('canvas'); c.width=w; c.height=h; const ctx=c.getContext('2d'); ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-
         ctx.save(); if(state.mirror){ctx.translate(w,0);ctx.scale(-1,1);} if(showAB) ctx.filter=pickLook(els.abIntensity.value,R);
-        const dx = Math.round(-(w*(ez-1))/2), dy = Math.round(-(h*(ez-1))/2);
-        ctx.drawImage(bmp,crop.sx,crop.sy,crop.sw,crop.sh, dx,dy, Math.round(w*ez), Math.round(h*ez));
-        ctx.restore(); ctx.filter='none';
-
-        // overlay + logo export (sin “resaltar preview”)
-        const ov=buildOverlayCanvas(w,h,seedBase+`|imgov|${i}`); ctx.drawImage(ov,0,0);
-        if(state.logo){ drawCenteredLogo(ctx, w,h, state.logo, state.logo.size, state.logo.opacity, false); }
-
+        ctx.drawImage(bmp,crop.sx,crop.sy,crop.sw,crop.sh,0,0,w,h); ctx.restore(); ctx.filter='none';
+        const ov=buildOverlayCanvas(w,h,seedBase+`|imgov|${i}`,{forPreview:false}); ctx.drawImage(ov,0,0);
         const blob=await new Promise(r=>c.toBlob(r,'image/png',0.95)); zip.file(`${base}_img_${i}.png`,blob,{binary:true});
         job.pct(i*(100/N)); setProgress((i/N)*100*0.9); if(state.abort) break;
       }
@@ -929,7 +888,7 @@ async function doExport(){
     if(!state.abort){
       zip.file('manifest.json',JSON.stringify({
         app:'Editor de Singularidad para ADS — Pro',
-        version:'v39-zoom-pan-logo-fix',
+        version:'v39-zoom-pan-guides',
         seed:seedBase,
         antiFlicker:!!els.noFlicker?.checked,
         keepRes:!!els.keepRes?.checked,
@@ -949,7 +908,6 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   const R=makeRNG(seedBase+`|vid|${t.label}|${idx}`);
   const targetAR=getPreferredAspect(info.width,info.height,R);
 
-  // Dimensiones de salida y del área visible (para letterbox)
   let crop={sx:0,sy:0,sw:info.width,sh:info.height};
   let outW, outH, viewW, viewH, dx=0, dy=0;
 
@@ -979,8 +937,7 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   const stream=c.captureStream(fps); try{ const vs=v.captureStream(); const aud=vs.getAudioTracks(); if(aud&&aud.length) stream.addTrack(aud[0]); }catch{}
   const chunks=[]; const rec=new MediaRecorder(stream,{mimeType:t.mime,videoBitsPerSecond:bps}); rec.ondataavailable=e=>{ if(e.data&&e.data.size) chunks.push(e.data); };
 
-  // overlay está alineado AL ÁREA VISIBLE (viewW x viewH)
-  const overlayStatic = buildOverlayCanvas(viewW, viewH, seedBase + '|ov|' + t.label + '|' + idx);
+  const overlayStatic = buildOverlayCanvas(viewW, viewH, seedBase + '|ov|' + t.label + '|' + idx, {forPreview:false});
 
   let segments=parseSegments(els.segments?.value||'', info.duration);
   if(!segments.length){
@@ -998,16 +955,6 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
   await seek(v, segments[0].start);
   await v.play(); rec.start(250);
 
-  // datos de zoom/pan de preview para aplicar en export
-  const ez = els.zoomExport.checked ? (+els.zoomPV.value)/100 : 1;
-  let panX = 0, panY = 0;
-  if(els.zoomExport.checked && state.pv.controller){
-    const p = state.pv.controller.getPan();
-    // normalizado a la vista
-    panX = (p.x/(p.w||1))*viewW;
-    panY = (p.y/(p.h||1))*viewH;
-  }
-
   const drawFrame=()=>{
     if(state.abort){ try{v.pause();}catch{} if(rec.state!=='inactive') rec.stop(); return; }
     if(v.paused) return;
@@ -1017,41 +964,23 @@ async function exportOneVideo({t,idx,info,plan,seedBase,baseName,zip,job,jobIdx,
 
     if(els.letterbox.checked){
       ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
-      const ddx = dx + Math.round(-(viewW*(ez-1))/2) + Math.round(panX);
-      const ddy = dy + Math.round(-(viewH*(ez-1))/2) + Math.round(panY);
-      ctx.drawImage(v,0,0,info.width,info.height, ddx,ddy, Math.round(viewW*ez), Math.round(viewH*ez));
+      ctx.drawImage(v,0,0,info.width,info.height, dx,dy, viewW,viewH);
       ctx.restore(); ctx.filter='none';
-
-      // overlay está posicionado en ddx,ddy
-      ctx.drawImage(overlayStatic, ddx, ddy);
-
-      // logo centrado en área visible
-      if(state.logo){
-        ctx.save(); ctx.translate(ddx,ddy);
-        drawCenteredLogo(ctx, viewW, viewH, state.logo, state.logo.size, state.logo.opacity, false);
-        ctx.restore();
-      }
-
-      ctx.save(); ctx.translate(ddx,ddy);
+      ctx.drawImage(overlayStatic, dx, dy);
+      ctx.save(); ctx.translate(dx,dy);
       drawInvisibleDynamic(ctx, viewW, viewH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
       ctx.restore();
     }else{
-      const ddx = Math.round(-(outW*(ez-1))/2) + Math.round(panX);
-      const ddy = Math.round(-(outH*(ez-1))/2) + Math.round(panY);
-      if(els.noCrop.checked){ ctx.drawImage(v,0,0,info.width,info.height, ddx,ddy, Math.round(outW*ez), Math.round(outH*ez)); }
-      else { ctx.drawImage(v,crop.sx,crop.sy,crop.sw,crop.sh, ddx,ddy, Math.round(outW*ez), Math.round(outH*ez)); }
+      if(els.noCrop.checked){ ctx.drawImage(v,0,0,info.width,info.height,0,0,outW,outH); }
+      else { ctx.drawImage(v,crop.sx,crop.sy,crop.sw,crop.sh,0,0,outW,outH); }
       ctx.restore(); ctx.filter='none';
-
       ctx.drawImage(overlayStatic,0,0);
-      if(state.logo){ drawCenteredLogo(ctx, outW, outH, state.logo, state.logo.size, state.logo.opacity, false); }
       drawInvisibleDynamic(ctx, outW, outH, seedBase + '|exp-dyn|' + t.label + '|' + idx, v.currentTime);
     }
 
     if(els.subsEnable.checked && state.subs.length){
       if(els.letterbox.checked){
-        const ddx = dx + Math.round(-(viewW*(ez-1))/2) + Math.round(panX);
-        const ddy = dy + Math.round(-(viewH*(ez-1))/2) + Math.round(panY);
-        ctx.save(); ctx.translate(ddx,ddy);
+        ctx.save(); ctx.translate(dx,dy);
         drawSubs(ctx,viewW,viewH,v.currentTime,state.subs,{size:+els.subsSize.value||24,bg:els.subsBg.checked});
         ctx.restore();
       }else{
@@ -1104,8 +1033,9 @@ function drawABExtra(ctx,w,h,R,logo){
 function drawGuides(ctx,w,h,R){
   guideBorder(ctx,w,h);
   if(els.optBorderMulti.checked) guideBorderMulti(ctx,w,h,R);
-  if(els.optShapes.checked) guideShapes(ctx,w,h,R);
-  if(els.optStripes.checked) guideStripes(ctx,w,h,R);
+  if(els.optShapes.checked)      guideShapes(ctx,w,h,R);
+  if(els.optStripes.checked)     guideStripes(ctx,w,h,R);
+  if(els.optCenterWM.checked)    guideWM(ctx,w,h);   // marco central del logo
 }
 function guideBorder(ctx,w,h){ const s=Math.max(1,Math.round(Math.min(w,h)*0.006)); ctx.save(); ctx.lineWidth=s; ctx.strokeStyle='rgba(255,255,0,.65)'; ctx.setLineDash([8,6]); ctx.strokeRect(s/2,s/2,w-s,h-s); ctx.restore(); }
 function guideBorderMulti(ctx, w, h, R) {
@@ -1144,10 +1074,15 @@ function guideStripes(ctx, w, h, R) {
   for (let x=-len; x<=len; x+=gap) ctx.fillRect(x, -len, sw, len*2);
   ctx.restore();
 }
-function guideShapes(ctx,w,h,R){ const n=3+Math.floor(R()*3); for(let i=0;i<n;i++){ const s=Math.min(w,h)*(0.012+R()*0.014); const x=(R()*(w-2*s))+s, y=(R()*(h-2*s))+s; ctx.save(); ctx.translate(x,y); ctx.rotate((R()*14-7)*Math.PI/180);
-  ctx.globalAlpha=.28; ctx.fillStyle='rgba(0,255,255,.18)'; ctx.strokeStyle='rgba(0,255,255,.85)'; ctx.lineWidth=Math.max(1,s*0.03);
-  const t=R(); if(t<.34){ ctx.beginPath(); ctx.arc(0,0,s*0.4,0,Math.PI*2); ctx.fill(); ctx.stroke(); } else if(t<.67){ roundRect(ctx,-s*0.45,-s*0.25,s*0.9,s*0.5,s*0.12); ctx.fill(); ctx.stroke(); } else { ctx.beginPath(); ctx.moveTo(-s*0.35,s*0.35); ctx.lineTo(0,-s*0.35); ctx.lineTo(s*0.35,s*0.35); ctx.closePath(); ctx.fill(); ctx.stroke(); } ctx.restore(); } }
-function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y,h); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+function guideWM(ctx,w,h){
+  const s=Math.min(w,h)*0.25;
+  ctx.save();
+  ctx.setLineDash([6,6]);
+  ctx.strokeStyle='rgba(255,255,0,.85)';
+  ctx.lineWidth=Math.max(1,Math.round(Math.min(w,h)*0.006));
+  ctx.strokeRect((w-s)/2,(h-s)/2,s,s);
+  ctx.restore();
+}
 
 const LOOKS={warm:{low:'contrast(1.02) saturate(1.06) sepia(.06) brightness(1.02)',mid:'contrast(1.05) saturate(1.12) sepia(.10) brightness(1.03)',high:'contrast(1.09) saturate(1.2) sepia(.16) brightness(1.04)'},
 cool:{low:'contrast(1.03) saturate(1.06) hue-rotate(180deg)',mid:'contrast(1.06) saturate(1.1) hue-rotate(190deg)',high:'contrast(1.1) saturate(1.18) hue-rotate(200deg)'},
@@ -1249,6 +1184,11 @@ function drawSubs(ctx,w,h,t,cues,opt){
   wrap.forEach((ln,i)=>{ const tx=Math.round(w/2 - ms(ln)/2), ty=Math.round(y - (wrap.length-1-i)*lh); ctx.strokeText(ln,tx,ty); ctx.fillText(ln,tx,ty); });
   ctx.restore();
 }
+
+/* ===================== Segments util ===================== */
+function parseSegments(s,dur){ if(!s) return []; return s.split(',').map(p=>p.trim()).map(r=>{const m=r.match(/^(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)$/); if(!m) return null; const a=+m[1], b=+m[2]; if(b>a && a<dur) return {start:clamp(a,0,dur), end:clamp(b,0,dur)}; return null; }).filter(Boolean); }
+function seek(v,t){ return new Promise(r=>{ try{v.currentTime=t;}catch{} v.onseeked=r; v.onloadeddata&&r(); }); }
+function roundRect(ctx,x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y,h); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
 
 /* ===================== Notas soporte ===================== */
 function updateFormatNote(){
